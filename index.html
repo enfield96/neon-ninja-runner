@@ -1,0 +1,2463 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Neon Ninja Runner. Present Simple edition.</title>
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;overflow:hidden;background:#070a14;
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+    -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
+  #game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:pointer;}
+
+  .hud{position:fixed;top:0;left:0;right:0;padding:16px 20px;display:flex;justify-content:space-between;
+    align-items:flex-start;pointer-events:none;color:#eaf0ff;font-weight:800;font-size:17px;
+    letter-spacing:.5px;text-shadow:0 2px 12px rgba(0,0,0,.75);opacity:0;transition:opacity .35s;}
+  .hud.on{opacity:1;}
+  .hud .coins{color:#ffd75e;}
+  .hudright{text-align:right;}
+  .hud .credit{margin-top:7px;font-size:9px;font-weight:700;line-height:1.35;
+    letter-spacing:.5px;color:rgba(168,190,228,.72);text-transform:none;}
+  .edition{margin:-2px 0 12px;font-size:clamp(15px,4.2vw,21px);font-weight:800;
+    letter-spacing:2.2px;text-transform:uppercase;color:#8fa4cf;}
+
+  .qrules{margin:16px 0 2px;padding:12px 14px;border-radius:14px;text-align:left;
+    background:rgba(124,246,196,.06);border:1px solid rgba(124,246,196,.18);}
+  .qrules h3{margin:0 0 9px;font-size:11px;font-weight:800;letter-spacing:1.5px;
+    text-transform:uppercase;color:#7cf6c4;}
+  .qrules ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px;}
+  .qrules li{display:flex;gap:9px;font-size:12.5px;line-height:1.45;color:#b9c7e6;}
+  .qrules b{color:#eaf0ff;font-weight:700;}
+  .qrules i{font-style:normal;color:#93a3c6;}
+  .qrules .tag{flex:none;width:17px;height:17px;margin-top:1px;border-radius:5px;
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;}
+  .tag.plus{background:rgba(60,230,140,.18);color:#3ce68c;}
+  .tag.minus{background:rgba(255,90,107,.18);color:#ff5a6b;}
+  .tag.q{background:rgba(79,208,255,.18);color:#4fd0ff;}
+  .tag.key{background:rgba(255,215,94,.18);color:#ffd75e;}
+  .qrules .qnote{margin:10px 0 0;padding-top:9px;border-top:1px solid rgba(255,255,255,.08);
+    font-size:11.5px;line-height:1.4;color:#8494b8;}
+  .title-credit{margin-top:18px;font-size:10.5px;font-weight:700;letter-spacing:1.6px;
+    text-transform:uppercase;color:rgba(168,190,228,.6);}
+  .hud small{display:block;font-size:11px;font-weight:600;letter-spacing:1.4px;
+    color:#8fa4cf;text-transform:uppercase;margin-bottom:2px;}
+
+  .overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    padding:24px;text-align:center;color:#eaf0ff;z-index:5;overflow-y:auto;
+    background:radial-gradient(ellipse at 50% 38%,rgba(24,36,74,.55),rgba(5,8,18,.92));
+    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+    animation:fade .25s ease-out;}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .overlay.hidden{display:none;}
+  .card{max-width:430px;width:100%;}
+  h1{margin:0 0 10px;font-size:clamp(30px,8vw,46px);line-height:1.05;
+    background:linear-gradient(100deg,#7cf6c4,#4fd0ff 45%,#b48bff);
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  p{margin:6px 0;color:#9fb0d6;font-size:14.5px;line-height:1.55;}
+  .keys{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:20px 0 6px;}
+  .key{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.13);border-radius:11px;
+    padding:9px 13px;font-size:13px;color:#c6d2f0;}
+  .key b{color:#7cf6c4;font-weight:700;}
+  button{cursor:pointer;border:0;border-radius:15px;padding:15px 40px;margin-top:22px;
+    font:inherit;font-size:17px;font-weight:800;color:#04121e;
+    background:linear-gradient(135deg,#7cf6c4,#4fd0ff);
+    box-shadow:0 12px 34px rgba(79,208,255,.32);transition:transform .12s,box-shadow .12s;}
+  button:hover{box-shadow:0 14px 40px rgba(79,208,255,.45);}
+  button:active{transform:scale(.96);}
+  .big{font-size:clamp(38px,11vw,58px);font-weight:800;color:#fff;margin:8px 0 2px;
+    text-shadow:0 0 34px rgba(124,246,196,.45);}
+  .sub{color:#8fa4cf;font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:700;}
+  .badge{display:inline-block;margin-top:14px;padding:7px 15px;border-radius:999px;
+    background:rgba(124,246,196,.11);border:1px solid rgba(124,246,196,.28);
+    color:#7cf6c4;font-size:13px;font-weight:700;}
+
+  /* ---- квиз на буст ---- */
+  .qtop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
+  .qkind{display:inline-flex;align-items:center;gap:9px;margin:6px 0 14px;
+    font-size:12px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;}
+  .qicon{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+    border-radius:50%;flex:none;}
+  .qicon svg{width:17px;height:17px;display:block;}
+  .qkind.aff{color:#3ce68c;}
+  .qkind.aff .qicon{background:rgba(60,230,140,.15);border:1px solid rgba(60,230,140,.45);}
+  .qkind.neg{color:#ff5a6b;}
+  .qkind.neg .qicon{background:rgba(255,90,107,.15);border:1px solid rgba(255,90,107,.45);}
+  .qkind.que{color:#4fd0ff;}
+  .qkind.que .qicon{background:rgba(79,208,255,.15);border:1px solid rgba(79,208,255,.45);}
+  .qtime{font-size:26px;font-weight:800;color:#7cf6c4;letter-spacing:1px;
+    font-variant-numeric:tabular-nums;}
+  .qtime.low{color:#ff6b7a;}
+  .qbar{height:6px;border-radius:999px;background:rgba(255,255,255,.12);
+    overflow:hidden;margin-bottom:18px;}
+  .qfill{height:100%;width:100%;border-radius:999px;
+    background:linear-gradient(90deg,#7cf6c4,#4fd0ff);transition:width .12s linear;}
+  .qprompt{margin:0 0 6px;color:#9fb0d6;font-size:14px;}
+  .qsentence{font-size:clamp(18px,4.6vw,23px);font-weight:700;color:#fff;
+    margin:4px 0 22px;line-height:1.4;}
+  .qopts{display:flex;flex-direction:column;gap:10px;}
+  .qopt{width:100%;margin:0;padding:14px 18px;border-radius:14px;font:inherit;
+    font-size:16px;font-weight:700;text-align:left;color:#dbe6ff;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
+    box-shadow:none;transition:background .15s,border-color .15s,transform .1s;}
+  .qopt:hover{background:rgba(255,255,255,.13);}
+  .qopt:active{transform:scale(.985);}
+  .qopt:disabled{cursor:default;}
+  .qopt.good{background:rgba(60,230,140,.25);border-color:#3ce68c;color:#b6ffd0;}
+  .qopt.bad{background:rgba(255,70,90,.22);border-color:#ff465a;color:#ffc9cf;}
+  .qopt.dim{opacity:.42;}
+  #qGoBtn{margin-left:auto;margin-right:auto;}
+
+  /* ---- кнопка звука ---- */
+  .soundbtn{position:fixed;right:14px;bottom:14px;z-index:6;width:42px;height:42px;
+    padding:0;margin:0;border-radius:50%;font-size:17px;line-height:1;
+    display:flex;align-items:center;justify-content:center;color:#dbe6ff;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);
+    box-shadow:none;cursor:pointer;transition:background .15s;}
+  .soundbtn:hover{background:rgba(255,255,255,.16);}
+  .soundbtn.off{opacity:.5;}
+  .musicbtn{right:66px;font-size:19px;}
+  .musicbtn.off{opacity:.45;}
+  .musicbtn.off::after{content:'';position:absolute;left:8px;right:8px;top:50%;
+    height:2px;border-radius:2px;background:#ff6b7a;transform:rotate(-45deg);}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div class="hud" id="hud">
+  <div><small>счёт</small><span id="scoreEl">0</span></div>
+  <div class="hudright">
+    <div class="coins"><small>монеты</small>◎ <span id="coinEl">0</span></div>
+    <div class="credit">Neon Ninja Runner · Present Simple edition<br>made by Vyacheslav Lysov</div>
+  </div>
+</div>
+
+<div class="overlay" id="menu">
+  <div class="card">
+    <h1>Neon Ninja Runner</h1>
+    <div class="edition">Present Simple edition.</div>
+    <p>Бесконечный забег по тоннелю. Уворачивайся от поездов,<br>перепрыгивай барьеры и подкатывайся под ворота.</p>
+    <div class="keys">
+      <span class="key"><b>← →</b> / <b>A D</b> — сменить путь</span>
+      <span class="key"><b>↑</b> / <b>Space</b> — прыжок</span>
+      <span class="key"><b>↓</b> / <b>S</b> — подкат</span>
+      <span class="key">свайпы на телефоне</span>
+    </div>
+
+    <div class="qrules">
+      <h3>Present Simple · шпаргалка</h3>
+      <ul>
+        <li><span class="tag plus">+</span><span><b>I / you / we / they</b> — глагол без окончания: <i>they play</i></span></li>
+        <li><span class="tag plus">+</span><span><b>he / she / it</b> — глагол с <b>-s / -es</b>: <i>he plays</i>, <i>she goes</i></span></li>
+        <li><span class="tag plus">+</span><span><b>-es</b> после s, sh, ch, x, o; <b>-y → -ies</b>: <i>study → studies</i></span></li>
+        <li><span class="tag minus">−</span><span><b>don't / doesn't</b> + глагол <b>без -s</b>: <i>they don't play</i>, <i>he doesn't play</i></span></li>
+        <li><span class="tag q">?</span><span><b>Do / Does</b> + подлежащее + глагол <b>без -s</b>: <i>Do they play?</i>, <i>Does she play?</i></span></li>
+        <li><span class="tag key">!</span><span><b>-s</b> живёт только в утверждении — в вопросе и отрицании её забирает <b>does</b></span></li>
+      </ul>
+      <p class="qnote">За верный ответ — полёт и монеты, за ошибку — бежишь дальше.</p>
+    </div>
+
+    <button id="startBtn">Побежали</button>
+    <div class="title-credit">made by Vyacheslav Lysov</div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="over">
+  <div class="card">
+    <div class="sub">забег окончен</div>
+    <div class="big" id="overScore">0</div>
+    <p id="overInfo">Монет собрано: 0</p>
+    <div class="badge" id="overBest">Рекорд: 0</div>
+    <br>
+    <button id="retryBtn">Ещё раз</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="quiz">
+  <div class="card">
+    <div class="qtop">
+      <span class="sub">бонус · ускорение</span>
+      <span class="qtime" id="qTime">45</span>
+    </div>
+    <div class="qkind aff" id="qKind">
+      <span class="qicon" id="qIcon"></span>
+      <span id="qKindText">Утверждение</span>
+    </div>
+    <div class="qbar"><div class="qfill" id="qFill"></div></div>
+    <p class="qprompt" id="qPrompt">Выбери правильную форму глагола:</p>
+    <div class="qsentence" id="qSentence"></div>
+    <div class="qopts" id="qOpts"></div>
+    <button id="qGoBtn" style="display:none">Побежали!</button>
+  </div>
+</div>
+
+<button id="soundBtn" class="soundbtn" title="Звуки">🔊</button>
+<button id="musicBtn" class="soundbtn musicbtn" title="Музыка">♫</button>
+
+<script>
+(() => {
+"use strict";
+
+/* ============================== КАНВАС / КАМЕРА ============================== */
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+const hud = document.getElementById('hud');
+const scoreEl = document.getElementById('scoreEl');
+const coinEl = document.getElementById('coinEl');
+const menuEl = document.getElementById('menu');
+const overEl = document.getElementById('over');
+const overScoreEl = document.getElementById('overScore');
+const overInfoEl = document.getElementById('overInfo');
+const overBestEl = document.getElementById('overBest');
+const quizEl = document.getElementById('quiz');
+const qTimeEl = document.getElementById('qTime');
+const qFillEl = document.getElementById('qFill');
+const qPromptEl = document.getElementById('qPrompt');
+const qSentenceEl = document.getElementById('qSentence');
+const qOptsEl = document.getElementById('qOpts');
+const qKindEl = document.getElementById('qKind');
+const qIconEl = document.getElementById('qIcon');
+const qKindTextEl = document.getElementById('qKindText');
+const qGoBtn = document.getElementById('qGoBtn');
+const soundBtn = document.getElementById('soundBtn');
+const musicBtn = document.getElementById('musicBtn');
+
+let W = 0, H = 0, cx = 0, cy = 0, f = 600, fEff = 600;
+
+const CAM_Y = 2.6;          // высота камеры над землёй
+const PLAYER_Z = 6;         // игрок всегда на этой глубине
+const LANES = [-2, 0, 2];   // три полосы
+const GRAV = 30;
+const JUMP_V = 10.2;
+const DASH_TIME = 0.26;
+const SPEED_START = 8;
+const SPEED_MAX = 16;
+const SPEED_RAMP = 0.11;      // единиц скорости в секунду
+const BOOST_TIME = 4.5;       // длительность буста
+const BOOST_Y = 3.2;          // высота полёта
+const BOOST_SPEED_MUL = 3;    // во столько раз быстрее в воздухе
+const BOOST_EVERY = 10;       // как часто появляется буст
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = cv.clientWidth || window.innerWidth;
+  H = cv.clientHeight || window.innerHeight;
+  cv.width = Math.round(W * dpr);
+  cv.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cx = W / 2;
+  cy = H * 0.40;
+  f = Math.min(H * 0.80, W * 0.78);
+  fEff = f;
+  makeSkyline();
+}
+window.addEventListener('resize', resize);
+
+// проекция мировой точки (x, y, z) на экран
+function proj(x, y, z) {
+  const zz = z < 0.9 ? 0.9 : z;
+  const s = fEff / zz;
+  return { x: cx + (x - camX) * s, y: cy + (camY - y) * s, s: s };
+}
+
+/* ============================== СОСТОЯНИЕ ============================== */
+const G = {
+  state: 'menu',
+  t: 0,
+  speed: 16,
+  runSpeed: 16,
+  spdMul: 1,
+  dist: 0,
+  coins: 0,
+  scroll: 0,
+  spawnT: 0,
+  shake: 0,
+  roll: 0,
+  zoom: 0,
+  boost: 0,
+  boostGrace: 0,
+  fov: 1,
+  boostSpawnT: BOOST_EVERY,
+  quiz: null,
+  quizCount: 0,
+  quizTypes: [],
+  lastTask: null,
+  overAt: 0,
+  best: Number(localStorage.getItem('metro.best') || 0)
+};
+
+const P = {
+  lane: 1, x: 0,
+  y: 0, vy: 0,
+  state: 'run',      // run | jump | slide
+  slideT: 0,
+  phase: 0,
+  pendingSlide: false,
+  dashT: 0,
+  dashDir: 1,
+  vx: 0,
+  alt: 0
+};
+
+let camX = 0;
+let camY = CAM_Y;
+
+let obstacles = [];
+let coins = [];
+let boosts = [];
+
+function reset() {
+  G.t = 0; G.speed = SPEED_START; G.runSpeed = SPEED_START; G.spdMul = 1; G.dist = 0; G.coins = 0; G.scroll = 0;
+  G.spawnT = 1.4; G.shake = 0; G.roll = 0; G.zoom = 0;
+  G.boost = 0; G.boostGrace = 0; G.boostSpawnT = BOOST_EVERY; G.fov = 1;
+  G.quiz = null; G.quizCount = 0; G.quizTypes = []; G.lastTask = null;
+  if (quizEl) { quizEl.classList.add('hidden'); qOptsEl.innerHTML = ''; qGoBtn.style.display = 'none'; }
+  obstacles.length = 0; coins.length = 0; boosts.length = 0;
+  P.lane = 1; P.x = 0; P.y = 0; P.vy = 0;
+  P.state = 'run'; P.slideT = 0; P.phase = 0; P.pendingSlide = false;
+  P.dashT = 0; P.dashDir = 1; P.vx = 0; P.alt = 0;
+  camX = 0; camY = CAM_Y;
+}
+
+/* ============================== СПАВН ============================== */
+const DEFS = {
+  hurdle: { w: 1.70, d: 0.70, y0: 0.00, y1: 0.62, c1: '#ff9d2e', c2: '#ffc063', kind: 'hurdle' },
+  gate:   { w: 1.85, d: 0.70, y0: 1.15, y1: 2.80, c1: '#c9202f', c2: '#ff5a5a', kind: 'gate' },
+  train:  { w: 1.75, d: 5.50, y0: 0.00, y1: 2.25, c1: '#2f6df6', c2: '#5b8dff', kind: 'train' }
+};
+
+function addObstacle(type, lane, z) {
+  const d = DEFS[type];
+  obstacles.push({
+    type: type, x: LANES[lane], lane: lane, z: z,
+    w: d.w, d: d.d, y0: d.y0, y1: d.y1, c1: d.c1, c2: d.c2
+  });
+}
+
+function addCoinRow(lane, z, n, arc) {
+  for (let i = 0; i < n; i++) {
+    const t = n > 1 ? i / (n - 1) : 0.5;
+    let y = 0.88;
+    if (arc) y = 0.88 + Math.sin(t * Math.PI) * 1.05;
+    coins.push({ x: LANES[lane], y: y, z: z + i * 2.6, spin: Math.random() * 6.28, alive: true });
+  }
+}
+
+function spawnPattern(z0) {
+  // дальность спавна считается от базовой скорости, а не от скорости полёта,
+  // иначе после буста остаётся пустой участок
+  z0 = z0 || Math.round(G.runSpeed * 7);
+  const order = [0, 1, 2].sort(() => Math.random() - 0.5);
+  const two = Math.random() < Math.min(0.62, 0.10 + G.t * 0.016);
+  const blocked = two ? order.slice(0, 2) : order.slice(0, 1);
+  const free = [0, 1, 2].filter(l => blocked.indexOf(l) === -1);
+  let hurdleLane = -1;
+
+  for (let i = 0; i < blocked.length; i++) {
+    const l = blocked[i];
+    const r = Math.random();
+    let type;
+    if (r < 0.34) type = 'hurdle';
+    else if (r < 0.70) type = 'gate';
+    else type = 'train';
+    if (G.t < 10 && type === 'train') type = 'hurdle';   // разгон без поездов
+    if (type === 'hurdle' && hurdleLane === -1) hurdleLane = l;
+    addObstacle(type, l, z0 + (Math.random() * 6 - 3));
+  }
+
+  if (free.length) {
+    const lane = free[Math.floor(Math.random() * free.length)];
+    addCoinRow(lane, z0 + 9, 3 + Math.floor(Math.random() * 4), false);
+  }
+  if (hurdleLane !== -1 && Math.random() < 0.45) {
+    addCoinRow(hurdleLane, z0 - 1.5, 3, true);
+  }
+}
+
+/* ============================== ЗВУК ============================== */
+/* Всё синтезируется через Web Audio — никаких внешних файлов. */
+let actx = null;
+let soundOn = true;
+let musicOn = true;
+try {
+  soundOn = localStorage.getItem('metro.sound') !== '0';
+  musicOn = localStorage.getItem('metro.music') !== '0';
+} catch (e) {}
+
+function audioUnlock() {
+  if (!actx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    try { actx = new AC(); } catch (e) { return; }
+  }
+  if (actx.state === 'suspended') actx.resume();
+}
+
+function beep(f0, f1, dur, type, vol, delay) {
+  if (!soundOn || !actx) return;
+  const t0 = actx.currentTime + (delay || 0);
+  const o = actx.createOscillator();
+  const g = actx.createGain();
+  o.type = type || 'sine';
+  o.frequency.setValueAtTime(f0, t0);
+  if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.001, vol || 0.08), t0 + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(actx.destination);
+  o.start(t0); o.stop(t0 + dur + 0.03);
+}
+
+function whoosh(dur, vol, f0, f1, delay) {
+  if (!soundOn || !actx) return;
+  const t0 = actx.currentTime + (delay || 0);
+  const len = Math.max(1, Math.floor(actx.sampleRate * dur));
+  const buf = actx.createBuffer(1, len, actx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  const src = actx.createBufferSource();
+  src.buffer = buf;
+  const flt = actx.createBiquadFilter();
+  flt.type = 'bandpass';
+  flt.Q.value = 1.1;
+  flt.frequency.setValueAtTime(f0 || 900, t0);
+  flt.frequency.exponentialRampToValueAtTime(Math.max(60, f1 || 300), t0 + dur);
+  const g = actx.createGain();
+  g.gain.setValueAtTime(Math.max(0.001, vol || 0.1), t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(flt); flt.connect(g); g.connect(actx.destination);
+  src.start(t0); src.stop(t0 + dur + 0.03);
+}
+
+const SFX = {
+  coin: function () { beep(1040, 1560, 0.09, 'sine', 0.07); },
+  jump: function () { beep(300, 660, 0.16, 'sine', 0.09); },
+  slide: function () { whoosh(0.22, 0.10, 1500, 260); },
+  dash: function () { whoosh(0.14, 0.07, 1900, 520); },
+  crash: function () {
+    whoosh(0.5, 0.26, 700, 90);
+    beep(170, 48, 0.45, 'square', 0.14);
+  },
+  correct: function () {
+    beep(523, 523, 0.10, 'triangle', 0.10);
+    beep(659, 659, 0.10, 'triangle', 0.10, 0.09);
+    beep(784, 784, 0.16, 'triangle', 0.10, 0.18);
+  },
+  wrong: function () {
+    beep(230, 130, 0.30, 'square', 0.09);
+  },
+  boost: function () {
+    beep(280, 1250, 0.38, 'sawtooth', 0.055);
+    whoosh(0.38, 0.10, 400, 2600);
+  },
+  tick: function () { beep(1250, 1250, 0.03, 'square', 0.035); }
+};
+
+/* ---------- фоновая музыка: индустриальный synthwave / cyberpunk ---------- */
+const MUSIC = {
+  style: 'chip',
+  steps: 448,
+  bpm: 126,
+  baseVol: 0.45,
+  duckVol: 0.16,
+  ducked: false,
+  gain: null,
+  pump: null,
+  bassIn: null,
+  synthIn: null,
+  timer: null,
+  nextNoteTime: 0,
+  step: 0
+};
+
+let noiseBuf = null;
+function getNoiseBuf() {
+  if (!noiseBuf) {
+    const len = Math.floor(actx.sampleRate * 0.5);
+    noiseBuf = actx.createBuffer(1, len, actx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  }
+  return noiseBuf;
+}
+
+function mtof(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+
+function distortionCurve(k) {
+  const n = 1024;
+  const c = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (i * 2) / n - 1;
+    c[i] = Math.tanh(x * k);
+  }
+  return c;
+}
+
+// вход шины -> перегрузка -> громкость -> фильтр -> pump -> master
+function mBus(vol, drive, cut) {
+  const inG = actx.createGain();
+  const ws = actx.createWaveShaper();
+  ws.curve = distortionCurve(drive);
+  ws.oversample = '2x';
+  const outG = actx.createGain();
+  outG.gain.value = vol;
+  const flt = actx.createBiquadFilter();
+  flt.type = 'lowpass';
+  flt.frequency.value = cut;
+  flt.Q.value = 0.8;
+  inG.connect(ws);
+  ws.connect(outG);
+  outG.connect(flt);
+  flt.connect(MUSIC.pump);
+  return inG;
+}
+
+function mBass(midi, t, dur, vol) {
+  const f0 = mtof(midi);
+  const o1 = actx.createOscillator();
+  const o2 = actx.createOscillator();
+  o1.type = 'sawtooth';
+  o2.type = 'sawtooth';
+  o1.frequency.value = f0;
+  o2.frequency.value = f0 * 1.008;
+  const flt = actx.createBiquadFilter();
+  flt.type = 'lowpass';
+  flt.frequency.setValueAtTime(260, t);
+  flt.frequency.exponentialRampToValueAtTime(1900, t + 0.035);
+  flt.frequency.exponentialRampToValueAtTime(360, t + dur);
+  flt.Q.value = 6;
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.001, vol), t + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o1.connect(flt); o2.connect(flt);
+  flt.connect(g); g.connect(MUSIC.bassIn);
+  o1.start(t); o1.stop(t + dur + 0.03);
+  o2.start(t); o2.stop(t + dur + 0.03);
+}
+
+function mStab(midi, t, dur, vol) {
+  const o = actx.createOscillator();
+  o.type = 'sawtooth';
+  o.frequency.value = mtof(midi);
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.001, vol), t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(MUSIC.synthIn);
+  o.start(t); o.stop(t + dur + 0.03);
+}
+
+function mArp(midi, t, dur, vol) {
+  const o = actx.createOscillator();
+  o.type = 'triangle';
+  o.frequency.value = mtof(midi);
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.001, vol), t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(MUSIC.synthIn);
+  o.start(t); o.stop(t + dur + 0.03);
+}
+
+function mKick(t, vol) {
+  const o = actx.createOscillator();
+  const g = actx.createGain();
+  o.frequency.setValueAtTime(170, t);
+  o.frequency.exponentialRampToValueAtTime(42, t + 0.11);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol || 0.34, t + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.20);
+  o.connect(g); g.connect(MUSIC.gain);
+  o.start(t); o.stop(t + 0.24);
+}
+
+function mSnare(t, vol) {
+  const src = actx.createBufferSource();
+  src.buffer = getNoiseBuf();
+  const f = actx.createBiquadFilter();
+  f.type = 'bandpass';
+  f.frequency.value = 1900;
+  f.Q.value = 0.8;
+  const g = actx.createGain();
+  const sv = vol || 0.13;
+  g.gain.setValueAtTime(sv, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+  src.connect(f); f.connect(g); g.connect(MUSIC.gain);
+  src.start(t); src.stop(t + 0.17);
+
+  const o = actx.createOscillator();
+  const og = actx.createGain();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(215, t);
+  o.frequency.exponentialRampToValueAtTime(140, t + 0.1);
+  og.gain.setValueAtTime(sv * 0.7, t);
+  og.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+  o.connect(og); og.connect(MUSIC.gain);
+  o.start(t); o.stop(t + 0.12);
+}
+
+function mHat(t, vol, dur) {
+  const src = actx.createBufferSource();
+  src.buffer = getNoiseBuf();
+  const f = actx.createBiquadFilter();
+  f.type = 'highpass';
+  f.frequency.value = 8200;
+  const g = actx.createGain();
+  g.gain.setValueAtTime(Math.max(0.001, vol), t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(f); f.connect(g); g.connect(MUSIC.gain);
+  src.start(t); src.stop(t + dur + 0.02);
+}
+
+// Em — C — G — D
+const PROG = [
+  { root: 40, chord: [55, 59, 64] },
+  { root: 36, chord: [52, 55, 60] },
+  { root: 43, chord: [55, 59, 62] },
+  { root: 38, chord: [54, 57, 62] }
+];
+
+function musicPump(t, amt, dur) {
+  const g = MUSIC.pump.gain;
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(Math.max(0.05, amt), t);
+  g.linearRampToValueAtTime(1, t + dur);
+}
+
+function musicScheduleCyber(step, t, sp) {
+  const ch = PROG[Math.floor(step / 16) % 4];
+  const s = step % 16;
+
+  // барабаны: бочка на каждой четверти
+  if (s % 4 === 0) { mKick(t, 0.34); musicPump(t, 0.28, 0.17); }
+  if (s === 14) { mKick(t, 0.19); musicPump(t, 0.45, 0.11); }
+  if (s === 4 || s === 12) mSnare(t);
+  if (s % 2 === 1) {
+    const open = (s === 7 || s === 15);
+    mHat(t, open ? 0.070 : 0.036, open ? 0.15 : 0.045);
+  }
+
+  // бас шестнадцатыми с акцентами
+  const acc = (s % 4 === 0) ? 1 : 0.6;
+  const up = (s === 6 || s === 14) ? 12 : 0;
+  mBass(ch.root + up, t, sp * 0.82, acc);
+
+  // диссонирующие стабы на слабых долях
+  if (s === 3 || s === 7 || s === 11 || s === 15) {
+    mStab(ch.chord[0], t, sp * 1.4, 0.9);
+    mStab(ch.chord[2], t, sp * 1.4, 0.7);
+  }
+
+  // арпеджио восьмыми
+  if (s % 2 === 0) {
+    mArp(ch.chord[(s >> 1) % 3] + 12, t, sp * 1.1, 0.75);
+  }
+}
+
+/* ---------- чиптюн-трек с песенной структурой (в духе Undertale) ---------- */
+const CHIP_CHORDS = {
+  Dm: { root: 38, arp: [62, 65, 69, 74] },
+  Bb: { root: 34, arp: [58, 62, 65, 70] },
+  Gm: { root: 31, arp: [55, 58, 62, 67] },
+  A7: { root: 33, arp: [57, 61, 64, 69] },
+  F:  { root: 29, arp: [53, 57, 60, 65] },
+  C:  { root: 36, arp: [55, 60, 64, 67] }
+};
+
+// две оригинальные темы: A — «паучья», по хроматизмам; B — выше и угловатее
+const CHIP_MEL = {
+  A: {
+    Dm: [[0,74],[2,69],[3,74],[6,77],[8,76],[10,74],[12,73],[14,74]],
+    Bb: [[0,70],[2,67],[3,70],[6,74],[8,72],[10,70],[12,69],[14,70]],
+    Gm: [[0,67],[2,62],[3,67],[6,70],[8,69],[10,67],[12,66],[14,67]],
+    A7: [[0,69],[2,64],[3,69],[6,73],[8,74],[10,76],[12,77],[14,76]]
+  },
+  B: {
+    F:  [[0,77],[1,79],[3,81],[6,79],[8,77],[10,74],[12,72],[14,74]],
+    C:  [[0,76],[1,77],[3,79],[6,77],[8,76],[10,72],[12,71],[14,72]],
+    Dm: [[0,74],[1,76],[3,77],[6,79],[8,81],[10,79],[12,77],[14,76]],
+    Bb: [[0,74],[2,70],[4,74],[6,77],[8,76],[10,74],[12,70],[14,67]],
+    Gm: [[0,67],[1,69],[3,70],[6,74],[8,72],[10,70],[12,67],[14,62]],
+    A7: [[0,69],[1,73],[3,76],[6,73],[8,69],[10,64],[12,69],[14,73]]
+  }
+};
+
+// форма: вступление → A → B → реприза A → слом
+const CHIP_FORM = [
+  { lead: 'arp', drums: 'soft',  chords: ['Dm', 'Dm'] },
+  { lead: 'mel', drums: 'full',  theme: 'A', chords: ['Dm','Bb','Gm','A7','Dm','Bb','Gm','A7'] },
+  { lead: 'mel', drums: 'full',  theme: 'B', chords: ['F','C','Dm','Bb','Gm','A7','Dm','Bb'] },
+  { lead: 'mel', drums: 'full',  theme: 'A', chords: ['Dm','Bb','Gm','A7','Dm','Bb','Gm','A7'] },
+  { lead: 'arp', drums: 'build', chords: ['Gm','A7'] }
+];
+
+const CHIP = { bpm: 126, bars: [] };
+
+(function buildChip() {
+  for (let si = 0; si < CHIP_FORM.length; si++) {
+    const sec = CHIP_FORM[si];
+    for (let ci = 0; ci < sec.chords.length; ci++) {
+      const name = sec.chords[ci];
+      const ch = CHIP_CHORDS[name];
+      let mel = [];
+      if (sec.lead === 'mel' && sec.theme) {
+        const src = CHIP_MEL[sec.theme][name] || [];
+        for (let k = 0; k < src.length; k++) {
+          mel.push([src[k][0], src[k][1] + (sec.oct || 0) - 12]);
+        }
+      }
+      CHIP.bars.push({ root: ch.root, arp: ch.arp, mel: mel, drums: sec.drums });
+    }
+  }
+})();
+
+function mChip(midi, t, dur, vol, type, cut) {
+  const o = actx.createOscillator();
+  o.type = type || 'square';
+  o.frequency.value = mtof(midi);
+  const g = actx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.001, vol), t + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  if (cut) {
+    const f = actx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = cut;
+    f.Q.value = 0.5;
+    o.connect(f);
+    f.connect(g);
+  } else {
+    o.connect(g);
+  }
+  g.connect(MUSIC.gain);
+  o.start(t);
+  o.stop(t + dur + 0.03);
+}
+
+function musicScheduleChip(step, t, sp) {
+  const bar = CHIP.bars[Math.floor(step / 16) % CHIP.bars.length];
+  const s = step % 16;
+  const full = bar.drums === 'full';
+
+  if (s === 0 || s === 8) mKick(t, full ? 0.28 : 0.19);
+  else if (full && (s === 6 || s === 14)) mKick(t, 0.14);
+  if (full && (s === 4 || s === 12)) mSnare(t, 0.10);
+  if (bar.drums === 'build' && (s === 4 || s === 8 || s === 12)) mSnare(t, 0.11);
+  if (s % 2 === 1) mHat(t, full ? 0.028 : 0.018, 0.04);
+
+  if (s % 2 === 0) {
+    const up = (s === 6 || s === 14) ? 12 : 0;
+    mChip(bar.root + up, t, sp * 1.5, 0.20, 'triangle', 900);
+  }
+
+  const arpVol = bar.mel.length ? 0.040 : 0.060;
+  mChip(bar.arp[s % bar.arp.length], t, sp * 0.85, arpVol, 'square', 1500);
+
+  for (let i = 0; i < bar.mel.length; i++) {
+    if (bar.mel[i][0] === s) {
+      mChip(bar.mel[i][1], t, sp * 1.7, 0.125, 'square', 2400);
+      break;
+    }
+  }
+}
+
+function musicSchedule(step, t, sp) {
+  if (MUSIC.style === 'chip') musicScheduleChip(step, t, sp);
+  else musicScheduleCyber(step, t, sp);
+}
+
+function musicTick() {
+  if (!actx || !MUSIC.gain) return;
+  const sp = 60 / MUSIC.bpm / 4;
+  while (MUSIC.nextNoteTime < actx.currentTime + 0.12) {
+    musicSchedule(MUSIC.step, MUSIC.nextNoteTime, sp);
+    MUSIC.nextNoteTime += sp;
+    MUSIC.step = (MUSIC.step + 1) % MUSIC.steps;
+  }
+}
+
+function musicStart() {
+  if (!actx || !musicOn) return;
+  if (!MUSIC.gain) {
+    MUSIC.gain = actx.createGain();
+    MUSIC.gain.gain.value = 0.0001;
+    MUSIC.gain.connect(actx.destination);
+  }
+  if (!MUSIC.pump) {
+    MUSIC.pump = actx.createGain();
+    MUSIC.pump.gain.value = 1;
+    MUSIC.pump.connect(MUSIC.gain);
+    MUSIC.bassIn = mBus(0.17, 3.0, 1100);
+    MUSIC.synthIn = mBus(0.10, 2.0, 3200);
+  }
+  if (MUSIC.timer) return;
+  if (MUSIC.style === 'chip') { MUSIC.bpm = CHIP.bpm; MUSIC.steps = CHIP.bars.length * 16; }
+  else { MUSIC.bpm = 130; MUSIC.steps = 64; }
+  MUSIC.nextNoteTime = actx.currentTime + 0.1;
+  MUSIC.step = 0;
+  MUSIC.timer = setInterval(musicTick, 25);
+  MUSIC.gain.gain.cancelScheduledValues(actx.currentTime);
+  MUSIC.gain.gain.setTargetAtTime(
+    MUSIC.ducked ? MUSIC.duckVol : MUSIC.baseVol, actx.currentTime, 0.5);
+}
+
+function musicStop() {
+  if (MUSIC.timer) { clearInterval(MUSIC.timer); MUSIC.timer = null; }
+  if (MUSIC.gain && actx) {
+    MUSIC.gain.gain.cancelScheduledValues(actx.currentTime);
+    MUSIC.gain.gain.setTargetAtTime(0.0001, actx.currentTime, 0.1);
+  }
+}
+
+function musicDuck(on) {
+  MUSIC.ducked = on;
+  if (!MUSIC.gain || !actx || !MUSIC.timer) return;
+  MUSIC.gain.gain.cancelScheduledValues(actx.currentTime);
+  MUSIC.gain.gain.setTargetAtTime(
+    on ? MUSIC.duckVol : MUSIC.baseVol, actx.currentTime, 0.25);
+}
+
+function updateSoundBtn() {
+  if (!soundBtn) return;
+  soundBtn.textContent = soundOn ? '🔊' : '🔇';
+  soundBtn.classList.toggle('off', !soundOn);
+}
+
+function updateMusicBtn() {
+  if (!musicBtn) return;
+  musicBtn.classList.toggle('off', !musicOn);
+  musicBtn.title = musicOn ? 'Музыка включена' : 'Музыка выключена';
+}
+
+updateSoundBtn();
+updateMusicBtn();
+
+musicBtn.addEventListener('click', function () {
+  musicOn = !musicOn;
+  try { localStorage.setItem('metro.music', musicOn ? '1' : '0'); } catch (e) {}
+  updateMusicBtn();
+  if (musicOn) { audioUnlock(); musicStart(); }
+  else { musicStop(); }
+});
+soundBtn.addEventListener('click', function () {
+  soundOn = !soundOn;
+  try { localStorage.setItem('metro.sound', soundOn ? '1' : '0'); } catch (e) {}
+  updateSoundBtn();
+  if (soundOn) { audioUnlock(); SFX.tick(); }
+});
+
+/* ============================== БАНК ЗАДАНИЙ ============================== */
+/* Пока только Present Simple. Структура готова к расширению:
+   prompt — заголовок, sentence — предложение с ____,
+   options — варианты ответа, correct — индекс верного. */
+const TASKS = [
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ He wear a blue school uniform?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ It take an hour to get there?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ The boys play computer games?", options: ["Do", "Does"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ My friends visit me on weekends?", options: ["Do", "Does"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ My cat drink fresh milk?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ The cats play with a string?", options: ["Do", "Does"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ We swim in the sea in summer?", options: ["Do", "Does"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ She dream of becoming a doctor?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ The door close automatically?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ My sister play volleyball?", options: ["Do", "Does"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ She wash the car?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ We have a big dog?", options: ["Does", "Do"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ The student listen to the teacher carefully?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ My brother clean his shoes?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ She see a beautiful rainbow?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ The sun rise early in summer?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ It look very interesting?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ My uncle work in a big office?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ My father watch the news on TV?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ He bake cookies?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ He lose his pen sometimes?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ We enjoy our holidays?", options: ["Does", "Do"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ You understand this grammar rule?", options: ["Do", "Does"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ He wear glasses?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ Your teachers give a lot of homework?", options: ["Does", "Do"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ He finish his work on time?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ The baby cry at night?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ He carry a small backpack?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ You understand the teacher well?", options: ["Do", "Does"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ My father drive a car?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ She dance very well?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ He teach Maths?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ My brother ride a bike in the park?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ She draw a nice picture?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ He have a big family?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ The cat sleep on the warm sofa?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ The earth go around the sun?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ The students write a test?", options: ["Do", "Does"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ The sun shine brightly in the sky?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ She meet her cousin on Sundays?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ He hate getting up early?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ My dog bark at strangers?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ They swim in the river?", options: ["Do", "Does"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ My friend know the right answer?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ My friend send me messages?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ She hear a strange noise outside?", options: ["Do", "Does"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ She study History on Mondays?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ My friends play board games?", options: ["Does", "Do"], correct: 1 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ He look for his book?", options: ["Does", "Do"], correct: 0 },
+  { type: "interrogative", prompt: "Выбери правильный вспомогательный глагол:", sentence: "_____ My brothers run very fast?", options: ["Does", "Do"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "Your grandparents _____ vegetables.", options: ["don't grow", "doesn't grow", "doesn't grows"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "Tom _____ football with his friends.", options: ["doesn't play", "don't play", "doesn't plays"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "The dog _____ after a ball.", options: ["don't run", "doesn't run", "doesn't runs"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "The students _____ to the teacher.", options: ["doesn't listen", "doesn't listens", "don't listen"], correct: 2 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "He _____ at 7 o'clock.", options: ["don't get up", "doesn't get up", "doesn't gets up"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "The dogs _____ in the kitchen.", options: ["doesn't sleep", "don't sleep", "doesn't sleeps"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "The boys _____ the ball.", options: ["doesn't kicks", "don't kick", "doesn't kick"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "They _____ on the phone.", options: ["doesn't talks", "don't talk", "doesn't talk"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "My classmates _____ their books.", options: ["doesn't shares", "doesn't share", "don't share"], correct: 2 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "Your parents _____ dinner together.", options: ["doesn't cooks", "don't cook", "doesn't cook"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "He _____ his homework early.", options: ["doesn't starts", "doesn't start", "don't start"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "She _____ her mother in the kitchen.", options: ["don't help", "doesn't help", "doesn't helps"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "We _____ to school by bus.", options: ["doesn't go", "don't go", "doesn't goes"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "The shop _____ at 9 o'clock.", options: ["doesn't open", "doesn't opens", "don't open"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "She _____ ballet.", options: ["don't dance", "doesn't dance", "doesn't dances"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "She _____ chocolate ice cream.", options: ["don't love", "doesn't loves", "doesn't love"], correct: 2 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "The phone _____ in the morning.", options: ["doesn't rings", "don't ring", "doesn't ring"], correct: 2 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "You _____ a dictionary.", options: ["doesn't use", "doesn't uses", "don't use"], correct: 2 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "My classmates _____ each other.", options: ["don't help", "doesn't help", "doesn't helps"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "The dogs _____ at the postman.", options: ["doesn't barks", "don't bark", "doesn't bark"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "She _____ for her turn.", options: ["doesn't waits", "doesn't wait", "don't wait"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "The earth _____ around the sun.", options: ["don't move", "doesn't move", "doesn't moves"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "He _____ Maths at school.", options: ["doesn't studies", "doesn't study", "don't study"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "My sister _____ German a little.", options: ["doesn't speaks", "doesn't speak", "don't speak"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "She _____ for the bus at the stop.", options: ["doesn't waits", "don't wait", "doesn't wait"], correct: 2 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "The cats _____ all day.", options: ["don't sleep", "doesn't sleeps", "doesn't sleep"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "My grandmother _____ in the country.", options: ["don't live", "doesn't lives", "doesn't live"], correct: 2 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "They _____ cartoons on Sundays.", options: ["doesn't watch", "doesn't watches", "don't watch"], correct: 2 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "The flower _____ in the garden.", options: ["doesn't grow", "doesn't grows", "don't grow"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "My sister _____ French very well.", options: ["doesn't speaks", "doesn't speak", "don't speak"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "She _____ all the rules.", options: ["doesn't remember", "doesn't remembers", "don't remember"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "He _____ some help with English.", options: ["doesn't need", "don't need", "doesn't needs"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "The children _____ in the garden.", options: ["don't run", "doesn't run", "doesn't runs"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "They _____ lunch at school.", options: ["doesn't eat", "doesn't eats", "don't eat"], correct: 2 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "My brother _____ in the pool.", options: ["doesn't swims", "doesn't swim", "don't swim"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "They _____ about their hobbies.", options: ["don't talk", "doesn't talk", "doesn't talks"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "My friend _____ me every evening.", options: ["don't call", "doesn't calls", "doesn't call"], correct: 2 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "He _____ a story.", options: ["doesn't write", "don't write", "doesn't writes"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "The clock _____ loudly.", options: ["doesn't tick", "doesn't ticks", "don't tick"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "They _____ TV in the evening.", options: ["doesn't watches", "don't watch", "doesn't watch"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "He _____ the music.", options: ["doesn't hears", "doesn't hear", "don't hear"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "They _____ pizza on Fridays.", options: ["doesn't eats", "don't eat", "doesn't eat"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "It _____ five dollars.", options: ["doesn't cost", "don't cost", "doesn't costs"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "We _____ reading books.", options: ["doesn't enjoy", "doesn't enjoies", "don't enjoy"], correct: 2 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "She _____ soup for lunch.", options: ["doesn't cook", "doesn't cooks", "don't cook"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "She _____ photos of nature.", options: ["doesn't takes", "don't take", "doesn't take"], correct: 2 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "My mother _____ the plants.", options: ["doesn't water", "don't water", "doesn't waters"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "She _____ the dishes after dinner.", options: ["don't wash", "doesn't wash", "doesn't washes"], correct: 1 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "Your teachers _____ our homework.", options: ["don't check", "doesn't check", "doesn't checks"], correct: 0 },
+  { type: "negative", prompt: "Выбери правильную отрицательную форму:", sentence: "She _____ her hands before dinner.", options: ["doesn't wash", "don't wash", "doesn't washes"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "She _____ Art on Fridays.", options: ["studies", "study", "to study"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "She _____ her friends after school.", options: ["meets", "to meet", "meet"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "It _____ in autumn.", options: ["rains", "rain", "to rain"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ to be a pilot.", options: ["want", "wants", "to want"], correct: 1 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "My dog _____ high.", options: ["to jump", "jump", "jumps"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "The train _____ at 8 o'clock.", options: ["leaves", "leave", "to leave"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "The lesson _____ at 9 o'clock.", options: ["start", "starts", "to start"], correct: 1 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ Geography.", options: ["studies", "study", "to study"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ a heavy bag.", options: ["to carry", "carries", "carry"], correct: 1 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "My mother _____ dinner every day.", options: ["cooks", "to cook", "cook"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "My sister _____ beautiful songs.", options: ["to sing", "sing", "sings"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "My uncle _____ a taxi.", options: ["drives", "drive", "to drive"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ a new laptop.", options: ["has", "to have", "have"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "She _____ her teeth every morning.", options: ["to brush", "brushes", "brush"], correct: 1 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "The flower _____ in spring.", options: ["blooms", "bloom", "to bloom"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "The phone _____ loudly.", options: ["ring", "rings", "to ring"], correct: 1 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "It _____ ten pounds.", options: ["cost", "costs", "to cost"], correct: 1 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ a good film every week.", options: ["sees", "to see", "see"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "My brother _____ his homework.", options: ["do", "to do", "does"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "She _____ my birthday.", options: ["remembers", "remember", "to remember"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "My father _____ the newspaper.", options: ["read", "to read", "reads"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ letters to his friend.", options: ["write", "to write", "writes"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ for the best result.", options: ["hope", "to hope", "hopes"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ his desk.", options: ["to tidy", "tidies", "tidy"], correct: 1 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "The baby _____ in the crib.", options: ["sleeps", "to sleep", "sleep"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "The teacher _____ the new topic.", options: ["explain", "explains", "to explain"], correct: 1 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ a good book.", options: ["finds", "find", "to find"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ English at school.", options: ["teaches", "to teach", "teach"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "She _____ the birds.", options: ["feed", "to feed", "feeds"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ a chocolate cake.", options: ["make", "makes", "to make"], correct: 1 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ this rule perfectly.", options: ["to understand", "understand", "understands"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "The film _____ at 8 o'clock.", options: ["end", "to end", "ends"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "Anna _____ beautiful pictures.", options: ["draws", "draw", "to draw"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ his keys on the table.", options: ["find", "to find", "finds"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "The computer _____ with homework.", options: ["to help", "help", "helps"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "It _____ a lot in December.", options: ["to snow", "snow", "snows"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "My mother _____ delicious cakes.", options: ["makes", "make", "to make"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ his face.", options: ["washes", "to wash", "wash"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ his toy sometimes.", options: ["breaks", "break", "to break"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "It _____ heavily in November.", options: ["to rain", "rain", "rains"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "My brother _____ breakfast at home.", options: ["eats", "to eat", "eat"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "He _____ apples.", options: ["to like", "like", "likes"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "It _____ in winter.", options: ["snows", "snow", "to snow"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "She _____ the bus to school.", options: ["take", "takes", "to take"], correct: 1 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "The student _____ the questions.", options: ["answers", "to answer", "answer"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "She _____ about travelling.", options: ["to dream", "dream", "dreams"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "The cat _____ milk from a saucer.", options: ["to drink", "drink", "drinks"], correct: 2 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "The film _____ at 6 o'clock.", options: ["begins", "to begin", "begin"], correct: 0 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "The shop _____ at 10 o'clock.", options: ["close", "closes", "to close"], correct: 1 },
+  { type: "affirmative", prompt: "Выбери правильную форму глагола:", sentence: "The train _____ at the station.", options: ["arrive", "to arrive", "arrives"], correct: 2 },
+];
+
+// вид задания: иконка + подпись в окве квиза
+const QKINDS = {
+  affirmative: {
+    cls: 'aff',
+    label: 'Утверждение',
+    icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>'
+  },
+  negative: {
+    cls: 'neg',
+    label: 'Отрицание',
+    icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22L1.14 11.27c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>'
+  },
+  interrogative: {
+    cls: 'que',
+    label: 'Вопрос',
+    icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4zm-1 12h2v2h-2z"/></svg>'
+  }
+};
+
+// лимит времени падает по мере забега: 45 с → 20 с
+function quizLimit() {
+  return Math.max(20, 45 - G.t * 0.4);
+}
+
+function pickTask() {
+  const hist = G.quizTypes;
+  const n = hist.length;
+  let pool = TASKS;
+  // больше двух одинаковых типов подряд не допускаем
+  if (n >= 2 && hist[n - 1] === hist[n - 2]) {
+    const filtered = TASKS.filter(function (t) { return t.type !== hist[n - 1]; });
+    if (filtered.length) pool = filtered;
+  }
+  let task = pool[Math.floor(Math.random() * pool.length)];
+  // и тот же самый вопрос два раза подряд тоже не берём
+  for (let guard = 0; guard < 10 && task === G.lastTask && pool.length > 1; guard++) {
+    task = pool[Math.floor(Math.random() * pool.length)];
+  }
+  G.lastTask = task;
+  hist.push(task.type);
+  if (hist.length > 4) hist.shift();
+  return task;
+}
+
+function openQuiz() {
+  const limit = quizLimit();
+  const task = pickTask();
+  G.quizCount++;
+
+  G.quiz = {
+    task: task, left: limit, limit: limit,
+    done: false, picked: -1, ok: false, wait: 0,
+    lastSec: Math.ceil(limit)
+  };
+
+  qPromptEl.textContent = task.prompt;
+  qSentenceEl.textContent = task.sentence;
+
+  const kind = QKINDS[task.type] || QKINDS.affirmative;
+  qKindEl.className = 'qkind ' + kind.cls;
+  qIconEl.innerHTML = kind.icon;
+  qKindTextEl.textContent = kind.label;
+
+  qOptsEl.innerHTML = '';
+  for (let i = 0; i < task.options.length; i++) {
+    (function (idx) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'qopt';
+      btn.textContent = (idx + 1) + '. ' + task.options[idx];
+      btn.addEventListener('click', function () { answerQuiz(idx); });
+      qOptsEl.appendChild(btn);
+    })(i);
+  }
+
+  qGoBtn.style.display = 'none';
+  qTimeEl.textContent = Math.ceil(limit);
+  qTimeEl.classList.remove('low');
+  qFillEl.style.width = '100%';
+  quizEl.classList.remove('hidden');
+  musicDuck(true);
+}
+
+function answerQuiz(idx) {
+  const q = G.quiz;
+  if (!q || q.done) return;
+  q.done = true;
+  q.picked = idx;
+  q.ok = idx >= 0 && idx === q.task.correct;
+  // по таймауту ждём нажатия «Побежали!»
+  q.wait = idx < 0 ? 0 : (q.ok ? 0.55 : 1.2);
+
+  const btns = qOptsEl.children;
+  for (let i = 0; i < btns.length; i++) {
+    btns[i].disabled = true;
+    if (i === q.task.correct) btns[i].classList.add('good');
+    else if (i === idx) btns[i].classList.add('bad');
+    else btns[i].classList.add('dim');
+  }
+
+  if (idx < 0) {
+    qFillEl.style.width = '0%';
+    qGoBtn.style.display = 'block';
+    qGoBtn.textContent = 'Побежали!';
+    SFX.wrong();
+  } else if (q.ok) {
+    SFX.correct();
+  } else {
+    SFX.wrong();
+  }
+}
+
+function closeQuiz() {
+  const ok = G.quiz ? G.quiz.ok : false;
+  G.quiz = null;
+  quizEl.classList.add('hidden');
+  qOptsEl.innerHTML = '';
+  qGoBtn.style.display = 'none';
+  musicDuck(false);
+  if (ok) startBoost();
+}
+
+qGoBtn.addEventListener('click', function () { closeQuiz(); });
+
+/* ============================== БУСТ ============================== */
+function startBoost() {
+  G.boost = BOOST_TIME;
+  spawnBoostCoins();
+  SFX.boost();
+}
+
+function spawnBoostCoins() {
+  const dist = G.speed * BOOST_SPEED_MUL * BOOST_TIME;
+  const n = Math.round(dist / 2.6) + 6;
+  const z0 = PLAYER_Z + 26;
+  let lane = P.lane;
+  for (let i = 0; i < n; i++) {
+    if (i % 6 === 3 && Math.random() < 0.6) lane = Math.floor(Math.random() * 3);
+    coins.push({
+      x: LANES[lane],
+      y: BOOST_Y + 0.85,
+      z: z0 + i * 2.6,
+      spin: Math.random() * 6.28
+    });
+  }
+}
+
+/* ============================== ДЕЙСТВИЯ ============================== */
+function move(dir) {
+  if (G.state !== 'play') return;
+  const n = P.lane + dir;
+  if (n < 0 || n > 2) return;
+  P.lane = n;
+  P.dashT = DASH_TIME;
+  P.dashDir = dir;
+  SFX.dash();
+}
+
+function jump() {
+  if (G.state !== 'play' || G.boost > 0) return;
+  if (P.state === 'jump') return;
+  P.state = 'jump';
+  P.vy = JUMP_V;
+  P.slideT = 0;
+  SFX.jump();
+}
+
+function slide() {
+  if (G.state !== 'play' || G.boost > 0) return;
+  if (P.state === 'jump') {          // быстрое падение из прыжка
+    P.vy = Math.min(P.vy, -14);
+    P.pendingSlide = true;
+    SFX.slide();
+    return;
+  }
+  P.state = 'slide';
+  P.slideT = 0.55;
+  SFX.slide();
+}
+
+function playerHeight() {
+  return P.state === 'slide' ? 0.80 : 1.75;
+}
+
+/* ============================== ОБНОВЛЕНИЕ ============================== */
+function update(dt) {
+  if (G.state === 'over') { G.shake *= Math.pow(0.02, dt); return; }
+  if (G.state !== 'play') return;
+
+  // пауза на время вопроса
+  if (G.quiz) {
+    const q = G.quiz;
+    if (!q.done) {
+      q.left -= dt;
+      if (q.left < 0) q.left = 0;
+      const sec = Math.ceil(q.left);
+      qTimeEl.textContent = sec;
+      qTimeEl.classList.toggle('low', q.left <= 7);
+      qFillEl.style.width = (q.left / q.limit * 100) + '%';
+      if (sec !== q.lastSec) {
+        q.lastSec = sec;
+        if (sec > 0 && sec <= 5) SFX.tick();
+      }
+      if (q.left <= 0) answerQuiz(-1);
+    } else if (q.wait > 0) {
+      q.wait -= dt;
+      if (q.wait <= 0) closeQuiz();
+    }
+    return;
+  }
+
+  G.t += dt;
+  G.runSpeed = Math.min(SPEED_MAX, SPEED_START + G.t * SPEED_RAMP);
+  const mulTarget = G.boost > 0 ? BOOST_SPEED_MUL : 1;
+  G.spdMul += (mulTarget - G.spdMul) * Math.min(1, dt * 4.5);
+  G.speed = G.runSpeed * G.spdMul;
+  const dz = G.speed * dt;
+  G.dist += dz;
+  G.scroll += dz;
+
+  // --- игрок
+  const prevX = P.x;
+  const tx = LANES[P.lane];
+  P.x += (tx - P.x) * Math.min(1, dt * 18);
+  P.phase += dt * (7 + G.speed * 0.30);
+
+  // дэш и слежение камеры
+  if (P.dashT > 0) P.dashT = Math.max(0, P.dashT - dt);
+  P.vx = (P.x - prevX) / Math.max(dt, 0.0001);
+  camX += (P.x - camX) * Math.min(1, dt * 9);
+  const rollTarget = Math.max(-0.035, Math.min(0.035, -P.vx * 0.0035));
+  G.roll += (rollTarget - G.roll) * Math.min(1, dt * 12);
+  // совсем лёгкое приближение на дэше
+  const zoomTarget = Math.min(1, Math.abs(P.vx) / 20) * 0.014;
+  G.zoom += (zoomTarget - G.zoom) * Math.min(1, dt * 6);
+
+  // --- буст: подъём над дорожками
+  if (G.boost > 0) {
+    G.boost -= dt;
+    if (G.boost <= 0) {
+      G.boost = 0;
+      G.boostGrace = 1.0;
+      // небесные монеты после буста уже не собрать — убираем
+      for (let i = coins.length - 1; i >= 0; i--) if (coins[i].y > 2) coins.splice(i, 1);
+    }
+  } else if (G.boostGrace > 0) {
+    G.boostGrace = Math.max(0, G.boostGrace - dt);
+  }
+  const altTarget = G.boost > 0 ? BOOST_Y : 0;
+  P.alt += (altTarget - P.alt) * Math.min(1, dt * (G.boost > 0 ? 5.5 : 3.2));
+
+  // камера поднимается вместе с героем
+  camY += ((CAM_Y + P.alt * 0.85) - camY) * Math.min(1, dt * 4);
+
+  // на скорости камера отъезжает
+  const fovTarget = G.boost > 0 ? 0.84 : 1;
+  G.fov += (fovTarget - G.fov) * Math.min(1, dt * 3);
+
+  if (P.state === 'jump') {
+    P.y += P.vy * dt;
+    P.vy -= GRAV * dt;
+    if (P.y <= 0) {
+      P.y = 0; P.vy = 0;
+      if (P.pendingSlide) { P.pendingSlide = false; P.state = 'slide'; P.slideT = 0.42; }
+      else P.state = 'run';
+    }
+  } else if (P.state === 'slide') {
+    P.slideT -= dt;
+    if (P.slideT <= 0) P.state = 'run';
+  }
+
+  // --- препятствия
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    const o = obstacles[i];
+    o.z -= dz;
+    if (o.z + o.d < 4.0) { obstacles.splice(i, 1); continue; }
+    if (G.boost <= 0 && G.boostGrace <= 0 && hit(o)) { gameOver(); return; }
+  }
+
+  // --- монеты
+  for (let i = coins.length - 1; i >= 0; i--) {
+    const c = coins[i];
+    c.z -= dz;
+    c.spin += dt * 5;
+    if (c.z < 3.6) { coins.splice(i, 1); continue; }
+    if (Math.abs(c.x - P.x) < 0.85 &&
+        c.z < PLAYER_Z + 0.9 && c.z > PLAYER_Z - 1.4 &&
+        Math.abs(c.y - (P.y + P.alt + 0.85)) < 1.15) {
+      coins.splice(i, 1);
+      G.coins++;
+      SFX.coin();
+    }
+  }
+
+  // --- бусты на дороге
+  for (let i = boosts.length - 1; i >= 0; i--) {
+    const b = boosts[i];
+    b.z -= dz;
+    b.spin += dt * 3;
+    if (b.z < 3.6) { boosts.splice(i, 1); continue; }
+    if (G.boost <= 0 && Math.abs(b.x - P.x) < 1.0 &&
+        b.z < PLAYER_Z + 1.0 && b.z > PLAYER_Z - 1.6) {
+      boosts.splice(i, 1);
+      openQuiz();
+    }
+  }
+
+  // --- спавн
+  G.spawnT -= dt;
+  if (G.spawnT <= 0) {
+    spawnPattern();
+    // в начале препятствий заметно меньше, плотность растёт постепенно
+    const base = Math.max(0.55, 1.75 - G.t * 0.030);
+    G.spawnT = base * (0.82 + Math.random() * 0.48);
+  }
+
+  // --- спавн буста раз в ~15 секунд
+  G.boostSpawnT -= dt;
+  if (G.boostSpawnT <= 0) {
+    G.boostSpawnT = BOOST_EVERY + (Math.random() * 4 - 2);
+    if (G.boost <= 0 && boosts.length === 0) {
+      boosts.push({
+        x: LANES[Math.floor(Math.random() * 3)],
+        y: 1.0,
+        z: Math.round(G.runSpeed * 4),
+        spin: 0
+      });
+    }
+  }
+
+  // --- HUD
+  scoreEl.textContent = scoreValue().toLocaleString('ru-RU');
+  coinEl.textContent = G.coins;
+}
+
+function scoreValue() {
+  return Math.floor(G.dist) + G.coins * 10;
+}
+
+function hit(o) {
+  // по глубине
+  const zN = o.z, zF = o.z + o.d;
+  if (zF < PLAYER_Z - 0.55 || zN > PLAYER_Z + 0.55) return false;
+  // по ширине
+  if (Math.abs(o.x - P.x) > (o.w + 0.70) / 2) return false;
+  // по высоте
+  const feet = P.y;
+  const top = P.y + playerHeight();
+  if (o.type === 'hurdle') return feet < o.y1 - 0.12;
+  if (o.type === 'gate') return top > o.y0 + 0.04;
+  return true;
+}
+
+function gameOver() {
+  G.state = 'over';
+  G.overAt = performance.now();
+  G.shake = 1;
+  SFX.crash();
+  const sc = scoreValue();
+  if (sc > G.best) { G.best = sc; localStorage.setItem('metro.best', String(sc)); }
+  overScoreEl.textContent = sc.toLocaleString('ru-RU');
+  overInfoEl.textContent = 'Монет собрано: ' + G.coins + '  ·  дистанция ' + Math.floor(G.dist) + ' м';
+  overBestEl.textContent = 'Рекорд: ' + G.best.toLocaleString('ru-RU');
+  hud.classList.remove('on');
+  overEl.classList.remove('hidden');
+}
+
+/* ============================== РИСОВАНИЕ: ФОН ============================== */
+let buildings = [];
+const sun = { sprite: null, r: 0, cx: 0, cy: 0 };
+
+function buildSun() {
+  const r = Math.max(40, Math.min(W * 0.25, H * 0.17));
+  sun.r = r;
+  sun.cx = cx;
+  sun.cy = cy - r * 0.92;
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const size = Math.ceil(r * 2);
+  const c = document.createElement('canvas');
+  c.width = Math.round(size * dpr);
+  c.height = Math.round(size * dpr);
+  const g2 = c.getContext('2d');
+  g2.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // диск
+  const grad = g2.createLinearGradient(0, 0, 0, size);
+  grad.addColorStop(0, '#ffe873');
+  grad.addColorStop(0.30, '#ffa63d');
+  grad.addColorStop(0.62, '#ff3d7f');
+  grad.addColorStop(1, '#9b1bb5');
+  g2.beginPath();
+  g2.arc(r, r, r, 0, 6.2832);
+  g2.fillStyle = grad;
+  g2.fill();
+
+  // полосы-вырезы (нижняя половина)
+  g2.globalCompositeOperation = 'destination-out';
+  let y = r * 0.62;
+  let step = 0;
+  while (y < size) {
+    const gapH = Math.max(1.5, r * (0.045 + step * 0.024));
+    const space = Math.max(2, r * (0.10 + step * 0.016));
+    g2.fillRect(0, y, size, gapH);
+    y += gapH + space;
+    step++;
+  }
+  sun.sprite = c;
+}
+
+function makeSkyline() {
+  buildings = [];
+  let x = 0;
+  while (x < 1.25) {
+    const w = 0.025 + Math.random() * 0.07;
+    buildings.push({ x: x, w: w, h: 0.03 + Math.random() * 0.115, k: Math.random() });
+    x += w + 0.006 + Math.random() * 0.022;
+  }
+  buildSun();
+}
+
+function drawSky() {
+  const g = ctx.createLinearGradient(0, 0, 0, cy + 10);
+  g.addColorStop(0, '#08060f');
+  g.addColorStop(0.38, '#1b0a35');
+  g.addColorStop(0.70, '#44115c');
+  g.addColorStop(0.90, '#8d1b6d');
+  g.addColorStop(1, '#d62f7c');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, cy + 12);
+
+  // неоновое солнце
+  if (sun.sprite) {
+    const glow = ctx.createRadialGradient(sun.cx, sun.cy, sun.r * 0.35, sun.cx, sun.cy, sun.r * 2.7);
+    glow.addColorStop(0, 'rgba(255,90,150,0.42)');
+    glow.addColorStop(0.40, 'rgba(255,55,140,0.16)');
+    glow.addColorStop(1, 'rgba(255,55,140,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(sun.cx - sun.r * 2.7, sun.cy - sun.r * 2.7, sun.r * 5.4, sun.r * 5.4);
+    ctx.drawImage(sun.sprite, sun.cx - sun.r, sun.cy - sun.r, sun.r * 2, sun.r * 2);
+  }
+
+  // туман у горизонта
+  const hz = ctx.createLinearGradient(0, cy - H * 0.16, 0, cy + 4);
+  hz.addColorStop(0, 'rgba(214,47,124,0)');
+  hz.addColorStop(1, 'rgba(255,90,170,0.50)');
+  ctx.fillStyle = hz;
+  ctx.fillRect(0, cy - H * 0.16, W, H * 0.16 + 4);
+
+  // силуэты города с параллаксом
+  const span = 1.25 * W;
+  let off = -(G.scroll * 2.4) % span;
+  for (let pass = -1; pass <= 1; pass++) {
+    for (let i = 0; i < buildings.length; i++) {
+      const b = buildings[i];
+      const bx = b.x * W + off + pass * span;
+      if (bx > W + 40 || bx + b.w * W < -40) continue;
+      const bh = b.h * H * 0.9;
+      ctx.fillStyle = 'rgba(18,7,36,0.88)';
+      ctx.fillRect(bx, cy - bh, b.w * W, bh + 2);
+      ctx.fillStyle = 'rgba(255,110,200,0.30)';
+      for (let wy = cy - bh + 6; wy < cy - 4; wy += 9) {
+        for (let wx = bx + 3; wx < bx + b.w * W - 4; wx += 7) {
+          if ((wx * 13 + wy * 7 + b.k * 100) % 11 < 4) ctx.fillRect(wx, wy, 2, 3);
+        }
+      }
+    }
+  }
+}
+
+function groundQuad(x1, x2, z1, z2, fill) {
+  const p1 = proj(x1, 0, z1), p2 = proj(x2, 0, z1);
+  const p3 = proj(x2, 0, z2), p4 = proj(x1, 0, z2);
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+  ctx.lineTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+}
+
+function drawGround() {
+  // пол
+  const g = ctx.createLinearGradient(0, cy, 0, H);
+  g.addColorStop(0, '#3d1155');
+  g.addColorStop(0.18, '#250f3d');
+  g.addColorStop(0.6, '#150828');
+  g.addColorStop(1, '#07040f');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, cy, W, H - cy);
+
+  // неоновая линия горизонта
+  const hz = ctx.createLinearGradient(0, cy - 6, 0, cy + 14);
+  hz.addColorStop(0, 'rgba(255,90,170,0)');
+  hz.addColorStop(0.5, 'rgba(255,120,190,0.75)');
+  hz.addColorStop(1, 'rgba(255,90,170,0)');
+  ctx.fillStyle = hz;
+  ctx.fillRect(0, cy - 6, W, 20);
+
+  // полотно тоннеля
+  groundQuad(-5.8, 5.8, 1, 210, 'rgba(62,22,102,0.95)');
+
+  // шпалы / полосы скорости
+  const period = 5, off = G.scroll % period;
+  for (let i = 0; i < 46; i++) {
+    const z1 = i * period - off + 1.2;
+    if (z1 < 1.1) continue;
+    if (z1 > 205) break;
+    const z2 = z1 + 2.4;
+    groundQuad(-5.8, 5.8, z1, z2, 'rgba(150,60,220,0.30)');
+  }
+
+  // рельсы-разделители
+  const rails = [-3.15, -1.05, 1.05, 3.15];
+  for (let i = 0; i < rails.length; i++) {
+    const x = rails[i];
+    groundQuad(x - 0.055, x + 0.055, 1.1, 210, 'rgba(110,240,255,0.34)');
+  }
+
+  // столбы по бокам
+  const span = 14, so = G.scroll % span;
+  const list = [];
+  for (let i = 0; i < 22; i++) {
+    const z = i * span - so + 1.5;
+    if (z < 1.2 || z > 200) continue;
+    list.push(z);
+  }
+  for (let i = list.length - 1; i >= 0; i--) {
+    const z = list[i];
+    const a = Math.sqrt(Math.max(0, 1 - z / 210));
+    for (let sgn = -1; sgn <= 1; sgn += 2) {
+      const base = proj(sgn * 6.4, 0, z);
+      const top = proj(sgn * 6.4, 4.2, z);
+      const hw = Math.max(1.4, 0.30 * base.s);
+      const grd = ctx.createLinearGradient(0, top.y, 0, base.y);
+      grd.addColorStop(0, 'rgba(190,130,255,' + (0.10 + 0.30 * a) + ')');
+      grd.addColorStop(1, 'rgba(110,50,180,' + (0.10 + 0.40 * a) + ')');
+      ctx.fillStyle = grd;
+      ctx.fillRect(base.x - hw / 2, top.y, hw, base.y - top.y);
+    }
+  }
+}
+
+/* ============================== РИСОВАНИЕ: ОБЪЕКТЫ ============================== */
+function poly(pts, fill) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+}
+
+function drawLaserGate(o) {
+  const zN = Math.max(o.z, 1.0);
+  const zF = Math.max(o.z + o.d, 1.05);
+  const xL = o.x - o.w / 2, xR = o.x + o.w / 2;
+  const yBot = o.y0, yTop = o.y1;
+  const sc = fEff / zN;
+
+  const postW = 0.11, barH = 0.11;
+  const ixL = xL + postW, ixR = xR - postW;
+  const iyB = yBot + barH, iyT = yTop - barH;
+
+  // проём: лёгкая дымка
+  const ha = proj(ixL, iyT, zN), hb = proj(ixR, iyT, zN);
+  const hc = proj(ixR, iyB, zN), hd = proj(ixL, iyB, zN);
+  const haze = ctx.createLinearGradient(0, ha.y, 0, hc.y);
+  haze.addColorStop(0, 'rgba(255,45,63,0.13)');
+  haze.addColorStop(1, 'rgba(255,45,63,0.04)');
+  poly([ha, hb, hc, hd], haze);
+
+  // лазерная сетка: ближний и дальний слой
+  const flick = 0.86 + 0.14 * Math.sin(P.phase * 2.7) * Math.sin(P.phase * 1.3);
+  const lw = Math.max(1, 0.018 * sc);
+
+  const gridPath = (gz) => {
+    ctx.beginPath();
+    for (let i = 1; i < 5; i++) {
+      const x = ixL + (ixR - ixL) * i / 5;
+      const a = proj(x, iyB, gz), b = proj(x, iyT, gz);
+      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+    }
+    for (let j = 1; j < 4; j++) {
+      const y = iyB + (iyT - iyB) * j / 4;
+      const a = proj(ixL, y, gz), b = proj(ixR, y, gz);
+      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+    }
+  };
+
+  ctx.lineCap = 'butt';
+  // дальний слой — тусклее, даёт объём
+  gridPath(zF);
+  ctx.globalAlpha = 0.18 * flick;
+  ctx.strokeStyle = '#ff2438';
+  ctx.lineWidth = lw * 2.0;
+  ctx.stroke();
+  ctx.globalAlpha = 0.45 * flick;
+  ctx.strokeStyle = '#ff8a8a';
+  ctx.lineWidth = lw * 0.8;
+  ctx.stroke();
+
+  // ближний слой — яркое ядро и ореол
+  gridPath(zN);
+  ctx.globalAlpha = 0.34 * flick;
+  ctx.strokeStyle = '#ff2438';
+  ctx.lineWidth = lw * 3.6;
+  ctx.stroke();
+  gridPath(zN);
+  ctx.globalAlpha = 0.95 * flick;
+  ctx.strokeStyle = '#ffd9d9';
+  ctx.lineWidth = lw;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // --- металлическая рама
+  const metalV = (pa, pb) => {
+    const g = ctx.createLinearGradient(0, pa.y, 0, pb.y);
+    g.addColorStop(0, '#f2f7ff');
+    g.addColorStop(0.30, '#b9c6e0');
+    g.addColorStop(0.64, '#7d8bab');
+    g.addColorStop(1, '#434d68');
+    return g;
+  };
+  const metalH = (pa, pb) => {
+    const g = ctx.createLinearGradient(pa.x, 0, pb.x, 0);
+    g.addColorStop(0, '#3b4460');
+    g.addColorStop(0.26, '#a7b5d2');
+    g.addColorStop(0.5, '#f2f7ff');
+    g.addColorStop(0.74, '#a7b5d2');
+    g.addColorStop(1, '#333c56');
+    return g;
+  };
+
+  let a, b, c, d;
+  // верхняя перекладина
+  a = proj(xL, yTop, zN); b = proj(xR, yTop, zN);
+  c = proj(xR, yTop - barH, zN); d = proj(xL, yTop - barH, zN);
+  poly([a, b, c, d], metalV(a, c));
+
+  // нижняя перекладина
+  a = proj(xL, yBot + barH, zN); b = proj(xR, yBot + barH, zN);
+  c = proj(xR, yBot, zN); d = proj(xL, yBot, zN);
+  poly([a, b, c, d], metalV(a, c));
+
+  // стойки
+  a = proj(xL, yTop - barH, zN); b = proj(xL + postW, yTop - barH, zN);
+  c = proj(xL + postW, yBot + barH, zN); d = proj(xL, yBot + barH, zN);
+  poly([a, b, c, d], metalH(a, b));
+
+  a = proj(xR - postW, yTop - barH, zN); b = proj(xR, yTop - barH, zN);
+  c = proj(xR, yBot + barH, zN); d = proj(xR - postW, yBot + barH, zN);
+  poly([a, b, c, d], metalH(a, b));
+
+  // неоновая кромка проёма
+  ctx.beginPath();
+  ctx.moveTo(ha.x, ha.y); ctx.lineTo(hb.x, hb.y);
+  ctx.lineTo(hc.x, hc.y); ctx.lineTo(hd.x, hd.y);
+  ctx.closePath();
+  ctx.strokeStyle = 'rgba(255,95,95,0.78)';
+  ctx.lineWidth = Math.max(1, 0.022 * sc);
+  ctx.stroke();
+
+  // болты
+  const boltR = Math.max(1, 0.024 * sc);
+  ctx.fillStyle = 'rgba(232,242,255,0.85)';
+  const bolts = [
+    [xL + postW * 0.5, yTop - barH * 0.5],
+    [xR - postW * 0.5, yTop - barH * 0.5],
+    [xL + postW * 0.5, yBot + barH * 0.5],
+    [xR - postW * 0.5, yBot + barH * 0.5]
+  ];
+  for (let i = 0; i < bolts.length; i++) {
+    const bp = proj(bolts[i][0], bolts[i][1], zN);
+    ctx.beginPath(); ctx.arc(bp.x, bp.y, boltR, 0, 6.2832); ctx.fill();
+  }
+}
+
+function drawBox(o) {
+  const fade = Math.min(1, Math.max(0, (o.z + o.d - 4.0) / 2.0));
+  if (fade <= 0.03) return;
+  ctx.save();
+  ctx.globalAlpha = fade;
+
+  if (o.type === 'gate') { drawLaserGate(o); ctx.restore(); return; }
+
+  const zN = Math.max(o.z, 1.0);
+  const zF = Math.max(o.z + o.d, 1.05);
+  const xL = o.x - o.w / 2, xR = o.x + o.w / 2;
+
+  // --- боковая грань (если коробка смещена от центра)
+  if (o.x > 0.01) {
+    const xs = xL, k = 0.55;
+    poly([
+      proj(xs, o.y0, zN), proj(xs, o.y1, zN),
+      proj(xs, o.y1, zF), proj(xs, o.y0, zF)
+    ], shade(o.c1, k));
+  } else if (o.x < -0.01) {
+    const xs = xR, k = 0.55;
+    poly([
+      proj(xs, o.y0, zN), proj(xs, o.y1, zN),
+      proj(xs, o.y1, zF), proj(xs, o.y0, zF)
+    ], shade(o.c1, k));
+  }
+
+  // --- верхняя грань
+  if (o.y1 < camY - 0.03) {
+    poly([
+      proj(xL, o.y1, zN), proj(xR, o.y1, zN),
+      proj(xR, o.y1, zF), proj(xL, o.y1, zF)
+    ], shade(o.c2, 1.05));
+  }
+
+  // --- передняя грань
+  const a = proj(xL, o.y1, zN), b = proj(xR, o.y1, zN);
+  const c = proj(xR, o.y0, zN), d = proj(xL, o.y0, zN);
+  const grd = ctx.createLinearGradient(0, a.y - 2, 0, c.y + 2);
+  grd.addColorStop(0, o.c2);
+  grd.addColorStop(1, shade(o.c1, 0.78));
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+  ctx.lineTo(c.x, c.y); ctx.lineTo(d.x, d.y);
+  ctx.closePath();
+  ctx.fillStyle = grd;
+  ctx.fill();
+
+  // --- детали
+  const scale = a.s;
+  if (o.type === 'train') {
+    // лобовое стекло и фара
+    const wpx = Math.abs(b.x - a.x), hpx = Math.abs(c.y - a.y);
+    ctx.fillStyle = 'rgba(10,20,45,0.78)';
+    ctx.fillRect(a.x + wpx * 0.10, a.y + hpx * 0.16, wpx * 0.80, hpx * 0.30);
+    ctx.fillStyle = 'rgba(190,225,255,0.55)';
+    ctx.fillRect(a.x + wpx * 0.58, a.y + hpx * 0.40, wpx * 0.30, hpx * 0.12);
+    ctx.fillStyle = 'rgba(255,230,150,0.95)';
+    ctx.fillRect(a.x + wpx * 0.12, a.y + hpx * 0.70, wpx * 0.16, hpx * 0.13);
+    ctx.fillRect(a.x + wpx * 0.72, a.y + hpx * 0.70, wpx * 0.16, hpx * 0.13);
+    // обводка
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = Math.max(1, 0.02 * scale);
+    ctx.stroke();
+  } else if (o.type === 'hurdle') {
+    const wpx = Math.abs(b.x - a.x), hpx = Math.abs(c.y - a.y);
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+    ctx.lineTo(c.x, c.y); ctx.lineTo(d.x, d.y); ctx.closePath();
+    ctx.clip();
+    ctx.fillStyle = 'rgba(60,30,0,0.38)';
+    const n = 5;
+    for (let i = -1; i < n; i++) {
+      const x0 = a.x + (wpx / n) * i;
+      ctx.beginPath();
+      ctx.moveTo(x0, d.y);
+      ctx.lineTo(x0 + wpx / n * 0.5, d.y);
+      ctx.lineTo(x0 + wpx / n * 0.5 + hpx * 0.9, a.y);
+      ctx.lineTo(x0 + hpx * 0.9, a.y);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,0.30)';
+    ctx.lineWidth = Math.max(1, 0.02 * scale);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, a.y); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawBoost(b) {
+  const fade = Math.min(1, Math.max(0, (b.z - 3.6) / 2.4));
+  if (fade <= 0.03) return;
+  const p = proj(b.x, b.y, Math.max(b.z, 3.0));
+  const r = Math.max(3, 0.40 * p.s);
+  const pulse = (b.spin || 0) * 1.6;
+
+  ctx.save();
+  ctx.globalAlpha = fade;
+
+  // зелёный ореол
+  const gl = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 2.8);
+  gl.addColorStop(0, 'rgba(70,255,150,0.55)');
+  gl.addColorStop(0.45, 'rgba(35,230,110,0.22)');
+  gl.addColorStop(1, 'rgba(35,230,110,0)');
+  ctx.fillStyle = gl;
+  ctx.beginPath(); ctx.arc(p.x, p.y, r * 2.8, 0, 6.2832); ctx.fill();
+
+  // ярко-зелёная стрелка вверх
+  const cy = p.y + Math.sin(pulse) * r * 0.12;
+  const headW = r * 1.00;
+  const headH = r * 0.82;
+  const shaftW = r * 0.68;
+  const shaftH = r * 0.92;
+  const totalH = headH + shaftH;
+  const topY = cy - totalH * 0.5;
+
+  ctx.beginPath();
+  ctx.moveTo(p.x, topY);
+  ctx.lineTo(p.x + headW, topY + headH);
+  ctx.lineTo(p.x + shaftW / 2, topY + headH);
+  ctx.lineTo(p.x + shaftW / 2, topY + totalH);
+  ctx.lineTo(p.x - shaftW / 2, topY + totalH);
+  ctx.lineTo(p.x - shaftW / 2, topY + headH);
+  ctx.lineTo(p.x - headW, topY + headH);
+  ctx.closePath();
+
+  const gd = ctx.createLinearGradient(p.x, topY, p.x, topY + totalH);
+  gd.addColorStop(0, '#c2ffd8');
+  gd.addColorStop(0.35, '#37ff87');
+  gd.addColorStop(1, '#0fbf55');
+  ctx.fillStyle = gd;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(235,255,244,0.92)';
+  ctx.lineWidth = Math.max(1, r * 0.10);
+  ctx.stroke();
+
+  // буква B
+  if (r > 9) {
+    ctx.font = 'bold ' + Math.round(r * 0.56) + 'px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#05391f';
+    ctx.fillText('B', p.x, topY + headH + shaftH * 0.54);
+  }
+
+  ctx.restore();
+}
+
+function drawCoin(c) {
+  const fade = Math.min(1, Math.max(0, (c.z - 3.6) / 1.2));
+  if (fade <= 0.03) return;
+  const p = proj(c.x, c.y, Math.max(c.z, 3.0));
+  const r = Math.max(1.2, 0.24 * p.s);
+  const sx = Math.abs(Math.cos(c.spin)) * 0.85 + 0.15;
+  ctx.save();
+  ctx.globalAlpha = fade;
+  const gl = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 2.0);
+  gl.addColorStop(0, 'rgba(255,225,120,0.40)');
+  gl.addColorStop(1, 'rgba(255,225,120,0)');
+  ctx.fillStyle = gl;
+  ctx.beginPath(); ctx.arc(p.x, p.y, r * 2.0, 0, 6.2832); ctx.fill();
+
+  ctx.beginPath();
+  ctx.ellipse(p.x, p.y, r * sx, r, 0, 0, 6.2832);
+  const cg = ctx.createLinearGradient(p.x - r, p.y - r, p.x + r, p.y + r);
+  cg.addColorStop(0, '#ffe066');
+  cg.addColorStop(0.5, '#ffc93c');
+  cg.addColorStop(1, '#ff9f1c');
+  ctx.fillStyle = cg;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,245,190,0.85)';
+  ctx.lineWidth = Math.max(1, r * 0.12);
+  ctx.stroke();
+  if (sx > 0.5) {
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y, r * sx * 0.45, r * 0.5, 0, 0, 6.2832);
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+    ctx.lineWidth = Math.max(1, r * 0.08);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ============================== РИСОВАНИЕ: ИГРОК ============================== */
+function rr(x, y, w, h, r) {
+  r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawPlayer() {
+  const s = fEff / PLAYER_Z;
+  const air = P.y + P.alt;
+  const feet = proj(P.x, air, PLAYER_Z);
+  const gp = proj(P.x, 0, PLAYER_Z);
+
+  // тень
+  const shR = 0.52 * s * (1 - Math.min(0.65, air * 0.22));
+  ctx.save();
+  ctx.globalAlpha = 0.42 * (1 - Math.min(0.85, air * 0.28));
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.ellipse(gp.x, gp.y, shR, shR * 0.34, 0, 0, 6.2832);
+  ctx.fill();
+  ctx.restore();
+
+  if (P.alt < 0.2) drawDust(feet.x, feet.y, s);
+
+  // --- полёт с бустом: тело ложится горизонтально
+  const kf = Math.min(1, Math.max(0, (P.alt - 0.25) / 1.6));
+
+  if (P.dashT > 0.001 && kf < 0.02) {
+    const k = P.dashT / DASH_TIME;
+    // полосы скорости
+    ctx.save();
+    ctx.globalAlpha = 0.45 * k;
+    ctx.strokeStyle = '#9fe9ff';
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 4; i++) {
+      const yy = feet.y - (0.30 + i * 0.40) * s;
+      const len = (1.1 + i * 0.30) * s * k;
+      ctx.lineWidth = Math.max(1, 0.075 * s);
+      ctx.beginPath();
+      ctx.moveTo(feet.x - P.dashDir * 0.60 * s, yy);
+      ctx.lineTo(feet.x - P.dashDir * (0.60 * s + len), yy);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    for (let i = 3; i >= 1; i--) {
+      ctx.save();
+      ctx.globalAlpha = 0.30 * k * (1 - i * 0.18);
+      ctx.translate(-P.dashDir * i * 0.26 * s, 0);
+      drawNinja(feet.x, feet.y, s);
+      ctx.restore();
+    }
+
+    // сам рывок: наклон и растяжение
+    ctx.save();
+    ctx.translate(feet.x, feet.y);
+    ctx.rotate(-P.dashDir * 0.28 * k);
+    ctx.scale(1 + 0.22 * k, 1 - 0.13 * k);
+    ctx.translate(-feet.x, -feet.y);
+    drawNinja(feet.x, feet.y, s);
+    ctx.restore();
+  } else {
+    if (P.alt > 0.12) drawFlame(feet.x, feet.y, s);
+    if (kf > 0.001) {
+      // плавный переход из бега в горизонтальный полёт
+      ctx.save();
+      if (kf < 0.999) { ctx.globalAlpha = 1 - kf; drawNinja(feet.x, feet.y, s); }
+      ctx.globalAlpha = kf;
+      const ang = Math.sin(P.phase * 1.6) * 0.045 * kf;
+      const py = feet.y - 0.55 * s;
+      ctx.translate(feet.x, py);
+      ctx.rotate(ang);
+      ctx.translate(-feet.x, -py);
+      drawNinjaFlying(feet.x, feet.y, s);
+      ctx.restore();
+    } else {
+      drawNinja(feet.x, feet.y, s);
+    }
+  }
+}
+
+/* Горизонтальный полёт: виден со спины, сильно укорочен перспективой,
+   голова смотрит вперёд (вдаль), ступни ближе всего к камере. */
+function drawNinjaFlying(fx, fy, s) {
+  const SUIT = '#2b3268';
+  const SUIT_HI = '#47519a';
+  const DARK = '#141936';
+  const ACCENT = '#ff4d5e';
+  const SKIN = '#f3c6a0';
+
+  const bodyW = 0.80 * s;
+  const bodyH = 0.50 * s;
+  const hipY = fy - 0.30 * s;
+  const shoulderY = hipY - bodyH;
+  const headR = 0.24 * s;
+  const headY = shoulderY - headR * 0.70;
+
+  // хвосты хатимаки — уносятся назад, к камере
+  const sw = Math.sin(P.phase * 2.4);
+
+  // ноги — ближе к камере, видны подошвы
+  ctx.fillStyle = SUIT;
+  rr(fx - 0.34 * s, hipY - 0.04 * s, 0.26 * s, 0.34 * s, 0.12 * s); ctx.fill();
+  rr(fx + 0.08 * s, hipY - 0.04 * s, 0.26 * s, 0.34 * s, 0.12 * s); ctx.fill();
+  ctx.fillStyle = DARK;
+  ctx.beginPath(); ctx.ellipse(fx - 0.21 * s, fy - 0.03 * s, 0.145 * s, 0.075 * s, 0, 0, 6.2832); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(fx + 0.21 * s, fy - 0.03 * s, 0.145 * s, 0.075 * s, 0, 0, 6.2832); ctx.fill();
+
+  // корпус со спины
+  const bg = ctx.createLinearGradient(0, shoulderY, 0, hipY);
+  bg.addColorStop(0, SUIT_HI);
+  bg.addColorStop(1, SUIT);
+  ctx.fillStyle = bg;
+  rr(fx - bodyW / 2, shoulderY, bodyW, hipY - shoulderY + 0.07 * s, 0.16 * s);
+  ctx.fill();
+
+  // пояс-оби
+  ctx.fillStyle = ACCENT;
+  ctx.fillRect(fx - bodyW * 0.52, hipY - 0.11 * s, bodyW * 1.04, 0.10 * s);
+
+  // катана за спиной
+  ctx.strokeStyle = '#1b2145';
+  ctx.lineWidth = Math.max(1.2, 0.075 * s);
+  ctx.beginPath();
+  ctx.moveTo(fx - 0.42 * s, hipY + 0.04 * s);
+  ctx.lineTo(fx + 0.30 * s, shoulderY + 0.02 * s);
+  ctx.stroke();
+
+  // хвосты хатимаки — уносятся назад, к камере
+  ctx.strokeStyle = ACCENT;
+  ctx.lineWidth = Math.max(1.2, 0.06 * s);
+  ctx.lineCap = 'round';
+  for (let i = -1; i <= 1; i += 2) {
+    ctx.beginPath();
+    ctx.moveTo(fx + i * headR * 0.60, headY + headR * 0.30);
+    ctx.quadraticCurveTo(
+      fx + i * headR * 2.5, headY + headR * (0.85 + sw * 0.25),
+      fx + i * headR * (2.1 - sw * 0.2), headY + headR * 2.5
+    );
+    ctx.stroke();
+  }
+
+  // руки вытянуты вперёд — видны по бокам головы
+  ctx.strokeStyle = SUIT;
+  ctx.lineWidth = 0.15 * s;
+  ctx.lineCap = 'round';
+  for (let i = -1; i <= 1; i += 2) {
+    ctx.beginPath();
+    ctx.moveTo(fx + i * 0.36 * s, shoulderY + 0.10 * s);
+    ctx.lineTo(fx + i * 0.30 * s, headY + headR * 0.45);
+    ctx.stroke();
+  }
+  ctx.fillStyle = SKIN;
+  for (let i = -1; i <= 1; i += 2) {
+    ctx.beginPath();
+    ctx.arc(fx + i * 0.30 * s, headY + headR * 0.45, 0.075 * s, 0, 6.2832);
+    ctx.fill();
+  }
+
+  // затылок
+  const hg = ctx.createLinearGradient(0, headY - headR, 0, headY + headR);
+  hg.addColorStop(0, '#5560ab');
+  hg.addColorStop(1, '#232a55');
+  ctx.fillStyle = hg;
+  ctx.beginPath(); ctx.arc(fx, headY, headR, 0, 6.2832); ctx.fill();
+
+  ctx.save();
+  ctx.beginPath(); ctx.arc(fx, headY, headR, 0, 6.2832); ctx.clip();
+  ctx.fillStyle = ACCENT;
+  ctx.fillRect(fx - headR, headY - headR * 0.44, headR * 2, headR * 0.48);
+  ctx.fillStyle = 'rgba(255,255,255,0.20)';
+  ctx.fillRect(fx - headR, headY - headR * 0.44, headR * 2, headR * 0.10);
+  ctx.restore();
+
+  ctx.strokeStyle = 'rgba(190,215,255,0.22)';
+  ctx.lineWidth = Math.max(1, 0.02 * s);
+  ctx.beginPath(); ctx.arc(fx, headY, headR, 0, 6.2832); ctx.stroke();
+}
+
+function drawFlame(fx, fy, s) {
+  const k = Math.min(1, P.alt / BOOST_Y);
+  const fl = 0.30 + 0.10 * Math.sin(P.phase * 7.5);
+  for (let i = 0; i < 3; i++) {
+    const w = (0.15 + i * 0.045) * s;
+    const h = (0.26 + fl + i * 0.16) * s;
+    const x = fx + (i - 1) * 0.19 * s;
+    const fg = ctx.createLinearGradient(x, fy, x, fy + h);
+    fg.addColorStop(0, 'rgba(255,245,170,' + (0.85 * k) + ')');
+    fg.addColorStop(0.45, 'rgba(255,160,50,' + (0.60 * k) + ')');
+    fg.addColorStop(1, 'rgba(255,60,20,0)');
+    ctx.fillStyle = fg;
+    ctx.beginPath();
+    ctx.moveTo(x - w / 2, fy);
+    ctx.lineTo(x + w / 2, fy);
+    ctx.lineTo(x, fy + h);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawNinja(fx, fy, s) {
+  const feet = { x: fx, y: fy };
+  const sliding = P.state === 'slide';
+  const Hh = (sliding ? 0.88 : 1.75) * s;
+  const Ww = (sliding ? 1.15 : 0.80) * s;
+  const baseY = fy;
+  const topY = baseY - Hh;
+
+  const flightK = Math.min(1, Math.max(0, (P.alt - 1.2) / 1.2));
+  const swing = Math.sin(P.phase) * (1 - flightK);
+  const swing2 = Math.sin(P.phase + Math.PI) * (1 - flightK);
+  const flying = flightK > 0.5;
+
+  const SUIT = '#2b3268';
+  const SUIT_HI = '#47519a';
+  const DARK = '#141936';
+  const ACCENT = '#ff4d5e';
+  const SKIN = '#f3c6a0';
+
+  const headR = Hh * (sliding ? 0.26 : 0.18);
+  const headY = topY + headR * 1.06;
+
+  // --- хвосты хатимаки, развеваются позади
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (let i = 0; i < 2; i++) {
+    const ph = P.phase * 0.85 + i * 2.2;
+    const len = headR * (2.3 + i * 0.55 + Math.sin(ph) * 0.35);
+    ctx.beginPath();
+    ctx.moveTo(feet.x - headR * 0.30, headY - headR * (0.28 + i * 0.14));
+    ctx.quadraticCurveTo(
+      feet.x - headR * 1.6, headY - headR * (0.85 + i * 0.25) + Math.sin(ph) * headR * 0.55,
+      feet.x - len, headY - headR * 0.2 + Math.sin(ph + 1.1) * headR * 0.85 + i * headR * 0.4
+    );
+    ctx.strokeStyle = i === 0 ? ACCENT : '#c8384a';
+    ctx.lineWidth = Math.max(1.2, headR * (0.36 - i * 0.06));
+    ctx.stroke();
+  }
+
+  // --- ноги
+  const legW = Ww * 0.30, legH = (sliding ? Hh * 0.30 : Hh * 0.40);
+  ctx.fillStyle = SUIT;
+  if (sliding) {
+    rr(feet.x - Ww * 0.56, baseY - legH * 0.78, Ww * 0.60, legH, legH * 0.30); ctx.fill();
+    rr(feet.x - Ww * 0.02, baseY - legH * 0.58, Ww * 0.62, legH * 0.86, legH * 0.30); ctx.fill();
+    ctx.fillStyle = DARK;
+    rr(feet.x - Ww * 0.64, baseY - legH * 0.80, Ww * 0.26, legH * 0.62, legH * 0.22); ctx.fill();
+  } else {
+    const l1 = Math.max(0, swing) * Hh * 0.09;
+    const l2 = Math.max(0, swing2) * Hh * 0.09;
+    rr(feet.x - Ww * 0.36, baseY - legH - l1, legW, legH + l1, legW * 0.42); ctx.fill();
+    rr(feet.x + Ww * 0.06, baseY - legH - l2, legW, legH + l2, legW * 0.42); ctx.fill();
+    // обмотки на голенях
+    ctx.fillStyle = '#333d68';
+    rr(feet.x - Ww * 0.39, baseY - legH * 0.46 - l1, legW * 1.15, legH * 0.16, legH * 0.06); ctx.fill();
+    rr(feet.x + Ww * 0.03, baseY - legH * 0.46 - l2, legW * 1.15, legH * 0.16, legH * 0.06); ctx.fill();
+    ctx.fillStyle = DARK;
+    rr(feet.x - Ww * 0.40, baseY - legH * 0.22 - l1, legW * 1.20, legH * 0.24, legH * 0.10); ctx.fill();
+    rr(feet.x + Ww * 0.02, baseY - legH * 0.22 - l2, legW * 1.20, legH * 0.24, legH * 0.10); ctx.fill();
+  }
+
+  // --- корпус
+  const torsoH = Hh * 0.42, torsoW = Ww * 0.94;
+  const torsoY = baseY - legH - torsoH + Hh * 0.06;
+  const jg = ctx.createLinearGradient(0, torsoY, 0, torsoY + torsoH);
+  jg.addColorStop(0, SUIT_HI);
+  jg.addColorStop(1, SUIT);
+  ctx.fillStyle = jg;
+  rr(feet.x - torsoW / 2, torsoY, torsoW, torsoH, torsoW * 0.30);
+  ctx.fill();
+
+  // --- рукава и кисти
+  if (!sliding && flying) {
+    // в полёте рука вытянута вперёд (в локальной оси — вверх)
+    const armW = Ww * 0.21;
+    ctx.fillStyle = SUIT;
+    rr(feet.x - armW * 0.55, topY - Hh * 0.16, armW, Hh * 0.48, armW * 0.55); ctx.fill();
+    ctx.fillStyle = SKIN;
+    ctx.beginPath(); ctx.arc(feet.x, topY - Hh * 0.16, armW * 0.66, 0, 6.2832); ctx.fill();
+    // вторая рука прижата вдоль тела
+    ctx.fillStyle = SUIT;
+    rr(feet.x + Ww * 0.36, torsoY + torsoH * 0.08, armW, torsoH * 0.64, armW * 0.5); ctx.fill();
+  } else if (!sliding) {
+    ctx.fillStyle = SUIT;
+    const armW = Ww * 0.22;
+    const a1 = swing2 * Hh * 0.08, a2 = swing * Hh * 0.08;
+    rr(feet.x - Ww * 0.53, torsoY + torsoH * 0.12 + a1, armW, torsoH * 0.60, armW * 0.5); ctx.fill();
+    rr(feet.x + Ww * 0.31, torsoY + torsoH * 0.12 + a2, armW, torsoH * 0.60, armW * 0.5); ctx.fill();
+    ctx.fillStyle = SKIN;
+    ctx.beginPath(); ctx.arc(feet.x - Ww * 0.42, torsoY + torsoH * 0.75 + a1, armW * 0.40, 0, 6.2832); ctx.fill();
+    ctx.beginPath(); ctx.arc(feet.x + Ww * 0.42, torsoY + torsoH * 0.75 + a2, armW * 0.40, 0, 6.2832); ctx.fill();
+  }
+
+  // --- пояс-оби
+  ctx.fillStyle = ACCENT;
+  const sashH = Hh * 0.07;
+  ctx.fillRect(feet.x - torsoW * 0.53, torsoY + torsoH * 0.64, torsoW * 1.06, sashH);
+  ctx.beginPath();
+  ctx.arc(feet.x, torsoY + torsoH * 0.64 + sashH * 0.5, sashH * 0.62, 0, 6.2832);
+  ctx.fill();
+
+  // --- катана за спиной (ножны + рукоять)
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#1b2145';
+  ctx.lineWidth = Math.max(1.3, Ww * 0.11);
+  ctx.beginPath();
+  ctx.moveTo(feet.x - torsoW * 0.60, torsoY + torsoH * 1.02);
+  ctx.lineTo(feet.x + torsoW * 0.48, torsoY + torsoH * 0.10);
+  ctx.stroke();
+  ctx.strokeStyle = ACCENT;
+  ctx.lineWidth = Math.max(1.3, Ww * 0.13);
+  ctx.beginPath();
+  ctx.moveTo(feet.x + torsoW * 0.46, torsoY + torsoH * 0.12);
+  ctx.lineTo(feet.x + torsoW * 0.74, torsoY - torsoH * 0.26);
+  ctx.stroke();
+  ctx.strokeStyle = '#8f9dd0';
+  ctx.lineWidth = Math.max(1, Ww * 0.055);
+  ctx.beginPath();
+  ctx.moveTo(feet.x + torsoW * 0.40, torsoY + torsoH * 0.20);
+  ctx.lineTo(feet.x + torsoW * 0.56, torsoY + torsoH * 0.03);
+  ctx.stroke();
+
+  // --- затылок: вид со спины
+  const hoodG = ctx.createLinearGradient(0, headY - headR, 0, headY + headR);
+  hoodG.addColorStop(0, '#5560ab');
+  hoodG.addColorStop(1, '#232a55');
+  ctx.fillStyle = hoodG;
+  ctx.beginPath(); ctx.arc(feet.x, headY, headR, 0, 6.2832); ctx.fill();
+
+  ctx.save();
+  ctx.beginPath(); ctx.arc(feet.x, headY, headR, 0, 6.2832); ctx.clip();
+  // хатимаки — повязка вокруг головы
+  ctx.fillStyle = ACCENT;
+  ctx.fillRect(feet.x - headR, headY - headR * 0.58, headR * 2, headR * 0.54);
+  ctx.fillStyle = 'rgba(255,255,255,0.20)';
+  ctx.fillRect(feet.x - headR, headY - headR * 0.58, headR * 2, headR * 0.11);
+  // тень под затылком
+  ctx.fillStyle = 'rgba(8,12,28,0.38)';
+  ctx.fillRect(feet.x - headR, headY + headR * 0.58, headR * 2, headR * 0.6);
+  ctx.restore();
+
+  // узел повязки
+  ctx.fillStyle = '#ff6b7a';
+  ctx.beginPath();
+  ctx.arc(feet.x - headR * 0.20, headY - headR * 0.30, headR * 0.18, 0, 6.2832);
+  ctx.fill();
+
+  // контур
+  ctx.strokeStyle = 'rgba(190,215,255,0.22)';
+  ctx.lineWidth = Math.max(1, 0.02 * s);
+  ctx.beginPath(); ctx.arc(feet.x, headY, headR, 0, 6.2832); ctx.stroke();
+
+}
+
+function drawDust(fx, fy, s) {
+  if (G.state !== 'play') return;
+  ctx.save();
+  ctx.globalAlpha = 0.16;
+  ctx.fillStyle = '#b98cff';
+  const t = (P.phase * 0.5) % 1;
+  for (let i = 0; i < 2; i++) {
+    const k = (t + i * 0.5) % 1;
+    const w = 0.16 * s * (1 + k * 1.8);
+    ctx.beginPath();
+    ctx.ellipse(fx + (i ? 0.18 : -0.18) * s, fy - 0.05 * s, w, w * 0.32, 0, 0, 6.2832);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+function shade(hex, k) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = Math.round(((n >> 16) & 255) * k);
+  let g = Math.round(((n >> 8) & 255) * k);
+  let b = Math.round((n & 255) * k);
+  r = Math.min(255, Math.max(0, r));
+  g = Math.min(255, Math.max(0, g));
+  b = Math.min(255, Math.max(0, b));
+  return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+function drawSpeedFx(k) {
+  if (k <= 0.01) return;
+  const R = Math.sqrt(W * W + H * H) * 0.5;
+  const mx = cx, my = H * 0.48;
+
+  ctx.save();
+  ctx.lineCap = 'round';
+  const N = 34;
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * 6.2832 + Math.sin(i * 12.9898) * 0.35;
+    const t = (G.t * 1.7 + i * 0.29) % 1;
+    const r0 = R * (0.60 + t * 0.30);
+    const r1 = r0 + R * (0.10 + 0.18 * (1 - t));
+    const ca = Math.cos(a), sa = Math.sin(a) * 0.88;
+    ctx.globalAlpha = 0.42 * k * (0.35 + 0.65 * t);
+    ctx.strokeStyle = '#e6faff';
+    ctx.lineWidth = Math.max(1, 2.6 * (1 - t) + 0.7);
+    ctx.beginPath();
+    ctx.moveTo(mx + ca * r0, my + sa * r0);
+    ctx.lineTo(mx + ca * r1, my + sa * r1);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // светящаяся кромка экрана
+  const vg = ctx.createRadialGradient(mx, my, Math.min(W, H) * 0.28, mx, my, Math.max(W, H) * 0.80);
+  vg.addColorStop(0, 'rgba(170,230,255,0)');
+  vg.addColorStop(0.60, 'rgba(150,220,255,0.03)');
+  vg.addColorStop(1, 'rgba(190,240,255,' + (0.34 * k) + ')');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/* ============================== КАДР ============================== */
+function render() {
+  fEff = f * G.fov;
+  const spdFx = Math.min(1, Math.max(0, (1 - G.fov) / 0.16));
+
+  ctx.save();
+  if (G.shake > 0.01) {
+    const m = G.shake * 14;
+    ctx.translate((Math.random() - 0.5) * m, (Math.random() - 0.5) * m);
+  }
+  // лёгкая тряска на скорости
+  if (spdFx > 0.01) {
+    const m = 2.8 * spdFx;
+    ctx.translate((Math.random() - 0.5) * m, (Math.random() - 0.5) * m);
+  }
+  // крен камеры и едва заметное приближение при перестроении
+  // (трансформация применяется всегда, чтобы не было скачка на возврате)
+  const pvy = cy + camY * fEff / PLAYER_Z;
+  const kz = 1.005 + G.zoom;
+  ctx.translate(cx, pvy);
+  ctx.rotate(G.roll);
+  ctx.scale(kz, kz);
+  ctx.translate(-cx, -pvy);
+
+  drawSky();
+  drawGround();
+
+  // собираем объекты и сортируем от дальних к ближним
+  const list = [];
+  for (let i = 0; i < obstacles.length; i++) {
+    const o = obstacles[i];
+    if (o.z > 210) continue;
+    list.push({ z: o.z + o.d * 0.5, draw: drawBox, obj: o });
+  }
+  for (let i = 0; i < coins.length; i++) {
+    const c = coins[i];
+    if (c.z > 210) continue;
+    list.push({ z: c.z, draw: drawCoin, obj: c });
+  }
+  for (let i = 0; i < boosts.length; i++) {
+    const b = boosts[i];
+    if (b.z > 210) continue;
+    list.push({ z: b.z, draw: drawBoost, obj: b });
+  }
+  list.sort((a, b) => b.z - a.z);
+
+  for (let i = 0; i < list.length; i++) {
+    list[i].draw(list[i].obj);
+  }
+
+  // герой рисуется последним — его никогда не перекрывают препятствия
+  drawPlayer();
+
+  // виньетка
+  const vg = ctx.createRadialGradient(cx, H * 0.55, Math.min(W, H) * 0.25, cx, H * 0.55, Math.max(W, H) * 0.78);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.restore();
+
+  // эффекты ускорения — поверх всего, без тряски
+  drawSpeedFx(spdFx);
+}
+
+/* ============================== ЦИКЛ ============================== */
+let last = 0;
+function loop(now) {
+  if (!last) last = now;
+  let dt = (now - last) / 1000;
+  last = now;
+  if (dt > 0.05) dt = 0.05;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+/* ============================== УПРАВЛЕНИЕ ============================== */
+const KEYS = {
+  ArrowLeft: 'left', KeyA: 'left',
+  ArrowRight: 'right', KeyD: 'right',
+  ArrowUp: 'up', KeyW: 'up', Space: 'up',
+  ArrowDown: 'down', KeyS: 'down'
+};
+
+function act(a) {
+  if (a === 'left') move(-1);
+  else if (a === 'right') move(1);
+  else if (a === 'up') jump();
+  else if (a === 'down') slide();
+}
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code.indexOf('Arrow') === 0) e.preventDefault();
+  if (e.repeat) return;
+
+  // ответ цифрами 1–3, а после таймаута — Enter/Space на «Побежали!»
+  if (G.quiz) {
+    if (G.quiz.done && qGoBtn.style.display !== 'none') {
+      if (e.code === 'Enter' || e.code === 'Space' || e.code === 'NumpadEnter') {
+        closeQuiz();
+        e.preventDefault();
+        return;
+      }
+    }
+    const pick = { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, Numpad3: 2 }[e.code];
+    if (pick !== undefined) answerQuiz(pick);
+    e.preventDefault();
+    return;
+  }
+
+  const a = KEYS[e.code];
+
+  if (G.state === 'menu') { if (a || e.code === 'Enter') startGame(); return; }
+  if (G.state === 'over') {
+    if (performance.now() - G.overAt > 550 && (a || e.code === 'Enter')) startGame();
+    return;
+  }
+  if (a) act(a);
+}, { passive: false });
+
+// свайпы
+let aX = 0, aY = 0, aT = 0, tracking = false;
+cv.addEventListener('pointerdown', e => {
+  aX = e.clientX; aY = e.clientY; aT = performance.now(); tracking = true;
+});
+cv.addEventListener('pointerup', e => {
+  if (!tracking) return;
+  tracking = false;
+  const dx = e.clientX - aX, dy = e.clientY - aY;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+  const quick = performance.now() - aT < 800;
+
+  if (Math.max(adx, ady) < 26) {
+    if (G.state === 'menu') startGame();
+    else if (G.state === 'over' && performance.now() - G.overAt > 550) startGame();
+    return;
+  }
+  if (G.state !== 'play' || !quick) return;
+  if (adx > ady) act(dx > 0 ? 'right' : 'left');
+  else act(dy > 0 ? 'down' : 'up');
+});
+cv.addEventListener('pointercancel', () => { tracking = false; });
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('retryBtn').addEventListener('click', startGame);
+
+function startGame() {
+  audioUnlock();
+  musicStart();
+  reset();
+  // разгон: первые препятствия ближе, чтобы не ждать в пустом тоннеле
+  const s0 = G.runSpeed;
+  spawnPattern(Math.round(s0 * 3.4));
+  spawnPattern(Math.round(s0 * 6.0));
+  G.state = 'play';
+  menuEl.classList.add('hidden');
+  overEl.classList.add('hidden');
+  hud.classList.add('on');
+  scoreEl.textContent = '0';
+  coinEl.textContent = '0';
+  last = 0;
+}
+
+/* ============================== СТАРТ ============================== */
+resize();
+reset();
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
